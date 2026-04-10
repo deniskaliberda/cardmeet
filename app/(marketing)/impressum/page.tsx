@@ -9,11 +9,11 @@ export default function ImpressumPage() {
 
       <div className="prose prose-sm dark:prose-invert space-y-4">
         <p>
-          <strong>Angaben gemaess &sect; 5 TMG</strong>
+          <strong>Angaben gemäß &sect; 5 TMG</strong>
         </p>
         <p>
           [Name]<br />
-          [Strasse]<br />
+          [Straße]<br />
           [PLZ Ort]
         </p>
 
@@ -23,7 +23,7 @@ export default function ImpressumPage() {
         </p>
 
         <h2 className="text-lg font-semibold">
-          Verantwortlich fuer den Inhalt nach &sect; 55 Abs. 2 RStV
+          Verantwortlich für den Inhalt nach &sect; 55 Abs. 2 RStV
         </h2>
         <p>
           [Name]<br />
@@ -33,7 +33,7 @@ export default function ImpressumPage() {
 
       <div className="mt-8">
         <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-          &larr; Zurueck zur Startseite
+          &larr; Zurück zur Startseite
         </Link>
       </div>
     </div>
