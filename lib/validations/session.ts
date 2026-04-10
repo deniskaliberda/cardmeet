@@ -5,8 +5,8 @@ export const createSessionSchema = z
   .object({
     title: z.string().min(3, "Mindestens 3 Zeichen").max(100, "Maximal 100 Zeichen"),
     description: z.string().max(500, "Maximal 500 Zeichen").optional(),
-    tcg: z.string().min(1, "Bitte ein Spiel auswaehlen"),
-    format: z.string().min(1, "Bitte ein Format auswaehlen"),
+    tcg: z.string().min(1, "Bitte ein Spiel auswählen"),
+    format: z.string().min(1, "Bitte ein Format auswählen"),
     power_level: z.coerce.number().int().optional(),
     max_players: z.coerce.number().int().min(2, "Mindestens 2 Spieler").max(20, "Maximal 20 Spieler"),
     city: z.string().min(1, "Bitte eine Stadt angeben"),
@@ -37,7 +37,7 @@ export const createSessionSchema = z
       }
       return true;
     },
-    { message: "Bitte ein Power Level auswaehlen", path: ["power_level"] }
+    { message: "Bitte ein Power Level auswählen", path: ["power_level"] }
   );
 
 export type CreateSessionInput = z.infer<typeof createSessionSchema>;

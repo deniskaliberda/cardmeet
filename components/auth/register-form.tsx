@@ -36,7 +36,7 @@ export function RegisterForm() {
     e.preventDefault();
 
     if (selectedTcgs.length === 0) {
-      toast.error("Bitte mindestens ein Spiel auswaehlen");
+      toast.error("Bitte mindestens ein Spiel auswählen");
       return;
     }
 

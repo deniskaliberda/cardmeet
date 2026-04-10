@@ -21,7 +21,7 @@ export async function createSession(formData: FormData) {
 
   const parsed = createSessionSchema.safeParse(raw);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungueltige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
   const supabase = await createClient();

@@ -38,10 +38,10 @@ export const TCG_LIST: TCGConfig[] = [
         name: "Commander / EDH",
         playerCount: { min: 2, max: 6, default: 4 },
         powerLevels: [
-          { level: 1, name: "Exhibition", description: "Theme-Decks, schwaecher als Precons", color: "#10b981" },
+          { level: 1, name: "Exhibition", description: "Theme-Decks, schwächer als Precons", color: "#10b981" },
           { level: 2, name: "Core", description: "Precon-Level, klare Win-Conditions", color: "#3b82f6" },
-          { level: 3, name: "Upgraded", description: "Staerker als Precons, bis 3 Game Changers", color: "#a855f7" },
-          { level: 4, name: "Optimized", description: "Keine Einschraenkungen ausser Banlist", color: "#f59e0b" },
+          { level: 3, name: "Upgraded", description: "Stärker als Precons, bis 3 Game Changers", color: "#a855f7" },
+          { level: 4, name: "Optimized", description: "Keine Einschränkungen außer Banlist", color: "#f59e0b" },
           { level: 5, name: "cEDH", description: "Kompetitiv, metagame-optimiert", color: "#ef4444" },
         ],
       },

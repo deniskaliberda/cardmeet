@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "CardMeet",
     short_name: "CardMeet",
-    description: "Finde TCG-Spieler in deiner Naehe und starte spontane Kartenspiel-Sessions.",
+    description: "Finde TCG-Spieler in deiner Nähe und starte spontane Kartenspiel-Sessions.",
     start_url: "/",
     display: "standalone",
     background_color: "#0a0a0a",

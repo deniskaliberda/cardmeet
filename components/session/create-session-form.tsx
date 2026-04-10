@@ -144,7 +144,7 @@ export function CreateSessionForm() {
               <CardContent>
                 <Select value={formatId} onValueChange={(v) => { setFormatId(v ?? ""); setPowerLevel(""); }}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Format waehlen" />
+                    <SelectValue placeholder="Format wählen" />
                   </SelectTrigger>
                   <SelectContent>
                     {tcg.formats.map((f) => (
@@ -272,7 +272,7 @@ export function CreateSessionForm() {
               type="button"
               className="text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setStep(1)}
-              title="Auswahl aendern"
+              title="Auswahl ändern"
             >
               <Pencil className="h-4 w-4" />
             </button>
@@ -316,7 +316,7 @@ export function CreateSessionForm() {
                 <Textarea
                   id="description"
                   name="description"
-                  placeholder="Erzaehl etwas ueber die Runde — z.B. welche Regeln gelten, ob Proxys erlaubt sind, ob es Snacks gibt..."
+                  placeholder="Erzähl etwas über die Runde — z.B. welche Regeln gelten, ob Proxys erlaubt sind, ob es Snacks gibt..."
                   maxLength={500}
                   rows={3}
                 />

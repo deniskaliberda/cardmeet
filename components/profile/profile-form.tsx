@@ -67,7 +67,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
               name="bio"
               defaultValue={profile.bio ?? ""}
               maxLength={500}
-              placeholder="Erzaehl etwas ueber dich..."
+              placeholder="Erzähl etwas über dich..."
             />
           </div>
 
