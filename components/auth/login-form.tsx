@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,10 +119,7 @@ export function LoginForm() {
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          Noch kein Konto?{" "}
-          <Link href="/register" className="text-primary underline">
-            Registrieren
-          </Link>
+          Einfach anmelden — Konto wird automatisch erstellt.
         </p>
       </CardFooter>
     </Card>

@@ -22,6 +22,10 @@ export default async function AppLayout({
     .eq("id", user.id)
     .single();
 
+  if (!profile) {
+    redirect("/register");
+  }
+
   return (
     <AppShell
       user={{

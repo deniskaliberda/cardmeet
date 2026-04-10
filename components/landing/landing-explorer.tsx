@@ -51,7 +51,7 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
   return (
     <div className="flex flex-col lg:flex-row" style={{ height: 'calc(100vh - 3.5rem)' }}>
       {/* Left panel — list */}
-      <div className="flex w-full flex-col border-r lg:w-[420px] lg:min-w-[380px]">
+      <div className="flex w-full flex-col border-r lg:w-[320px] lg:min-w-[280px]">
         {/* Tagline + CTA */}
         <div className="border-b px-4 py-5">
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
@@ -129,7 +129,7 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
       </div>
 
       {/* Right panel — map */}
-      <div className="relative h-[350px] lg:flex-1">
+      <div className="relative h-[350px] lg:h-full lg:flex-1">
         <div className="absolute inset-0">
           <SessionMap sessions={filtered} />
         </div>
