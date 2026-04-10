@@ -40,7 +40,7 @@ export default async function SessionsPage({
       <div>
         <h1 className="text-2xl font-bold">Sessions finden</h1>
         <p className="text-muted-foreground">
-          Finde Mitspieler in deiner Naehe
+          Finde Mitspieler in deiner Nähe
         </p>
       </div>
 

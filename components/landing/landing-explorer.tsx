@@ -55,7 +55,7 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
         {/* Tagline + CTA */}
         <div className="border-b px-4 py-5">
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-            Finde Mitspieler in deiner Naehe
+            Finde Mitspieler in deiner Nähe
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {filtered.length} offene{" "}

@@ -10,7 +10,7 @@ export function LandingFeatures() {
           </div>
           <h3 className="text-sm font-semibold">Standortbasiert</h3>
           <p className="text-xs text-muted-foreground">
-            Finde Sessions und Spieler in deiner Naehe.
+            Finde Sessions und Spieler in deiner Nähe.
           </p>
         </div>
         <div className="space-y-2 text-center">
