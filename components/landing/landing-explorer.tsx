@@ -59,7 +59,7 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {filtered.length} offene{" "}
-            {filtered.length === 1 ? "Session" : "Sessions"} in Deutschland
+            {filtered.length === 1 ? "Session" : "Sessions"} in Berlin & Umland
           </p>
           <div className="mt-3">
             <Link href="/register">

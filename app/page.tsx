@@ -10,9 +10,9 @@ export default async function LandingPage() {
   const supabase = await createClient();
 
   const { data: sessions } = await supabase.rpc("nearby_sessions", {
-    lat: 51.16,
-    lng: 10.45,
-    radius_km: 1000,
+    lat: 52.52,
+    lng: 13.405,
+    radius_km: 50,
   });
 
   const mappedSessions = (sessions ?? []).map((s: Record<string, unknown>) => ({

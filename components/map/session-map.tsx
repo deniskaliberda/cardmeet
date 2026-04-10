@@ -114,8 +114,12 @@ export function SessionMap({ sessions }: { sessions: MapSession[] }) {
           },
         ],
       },
-      center: [10.45, 51.16],
-      zoom: 5.5,
+      center: [13.405, 52.52],
+      zoom: 9,
+      maxBounds: [
+        [11.5, 51.2],
+        [15.3, 53.8],
+      ],
       attributionControl: false,
     });
 
