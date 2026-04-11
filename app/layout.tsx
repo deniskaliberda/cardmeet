@@ -6,19 +6,19 @@ import { siteConfig } from "@/lib/config/site";
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-sans",
+  variable: "--font-jakarta",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
 });
 
 const outfit = Outfit({
-  variable: "--font-heading",
+  variable: "--font-outfit",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
 });
 
 const firaCode = Fira_Code({
-  variable: "--font-mono",
+  variable: "--font-fira",
   subsets: ["latin"],
   weight: ["300", "400", "500"],
 });
