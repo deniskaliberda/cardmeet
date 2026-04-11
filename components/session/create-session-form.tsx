@@ -152,8 +152,7 @@ export function CreateSessionForm() {
       </div>
 
       {/* ==================== STEP 1: Spiel ==================== */}
-      {step === 1 && (
-        <div className="space-y-6">
+      <div className={step !== 1 ? "hidden" : "space-y-6"}>
           {/* TCG Selection */}
           <Card>
             <CardHeader className="pb-3">
@@ -307,11 +306,10 @@ export function CreateSessionForm() {
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
-      )}
+      </div>
 
       {/* ==================== STEP 2: Details ==================== */}
-      {step === 2 && (
-        <div className="space-y-6">
+      <div className={step !== 2 ? "hidden" : "space-y-6"}>
           {/* Summary from Step 1 */}
           <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-4 py-3">
             <div className="flex flex-wrap items-center gap-2 flex-1">
