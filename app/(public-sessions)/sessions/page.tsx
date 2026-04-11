@@ -4,12 +4,38 @@ import { LandingExplorer } from "@/components/landing/landing-explorer";
 export const metadata = { title: "Sessions finden" };
 export const revalidate = 60;
 
+// Fallback: Berlin
+const DEFAULT_LAT = 52.52;
+const DEFAULT_LNG = 13.405;
+const DEFAULT_CITY = "Berlin";
+
 export default async function SessionsPage() {
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Use the user's saved city if available
+  let lat = DEFAULT_LAT;
+  let lng = DEFAULT_LNG;
+  let cityLabel = DEFAULT_CITY;
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("city, city_lat, city_lng")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.city_lat && profile?.city_lng) {
+      lat = profile.city_lat;
+      lng = profile.city_lng;
+      cityLabel = profile.city ?? DEFAULT_CITY;
+    }
+  }
+
   const { data: sessions } = await supabase.rpc("nearby_sessions", {
-    lat: 52.52,
-    lng: 13.405,
+    lat,
+    lng,
     radius_km: 50,
   });
 
@@ -35,7 +61,9 @@ export default async function SessionsPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Sessions in deiner Nähe</h1>
-        <p className="text-sm text-muted-foreground">Berlin & Umland · 50 km Radius</p>
+        <p className="text-sm text-muted-foreground">
+          {cityLabel} & Umland · 50 km Radius
+        </p>
       </div>
       <LandingExplorer sessions={mappedSessions} />
     </div>

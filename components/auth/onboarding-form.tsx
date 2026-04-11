@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { TCG_LIST } from "@/lib/config/tcg";
-import { ArrowRight, ArrowLeft, MapPin, Check } from "lucide-react";
+import { ArrowRight, ArrowLeft, MapPin, Check, Loader2 } from "lucide-react";
+
+type CityResult = {
+  display_name: string;
+  name: string;
+  lat: string;
+  lon: string;
+  address: { city?: string; town?: string; village?: string; state?: string };
+};
 
 // Top 4 TCGs in Deutschland nach Spielerzahl
 const TOP_TCGS = ["magic", "pokemon", "yugioh", "onepiece"] as const;
@@ -27,9 +35,64 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
+  // Step 1
   const [username, setUsername] = useState("");
-  const [city, setCity] = useState("");
+
+  // Step 2 – city search
+  const [cityQuery, setCityQuery] = useState("");
+  const [cityResults, setCityResults] = useState<CityResult[]>([]);
+  const [citySearching, setCitySearching] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<{ name: string; lat: number; lng: number } | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Step 3
   const [selectedTcgs, setSelectedTcgs] = useState<string[]>([]);
+
+  // Nominatim city search
+  useEffect(() => {
+    if (cityQuery.length < 2) {
+      setCityResults([]);
+      setShowResults(false);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setCitySearching(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityQuery)}&countrycodes=de&format=json&addressdetails=1&limit=6`,
+          { headers: { "Accept-Language": "de" } }
+        );
+        const data: CityResult[] = await res.json();
+        // Keep only city/town/village results
+        const cities = data.filter((r) =>
+          r.address.city || r.address.town || r.address.village
+        );
+        setCityResults(cities.slice(0, 5));
+        setShowResults(true);
+      } catch {
+        // silently ignore network errors
+      } finally {
+        setCitySearching(false);
+      }
+    }, 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [cityQuery]);
+
+  function pickCity(result: CityResult) {
+    const name =
+      result.address.city ?? result.address.town ?? result.address.village ?? result.name;
+    setSelectedCity({ name, lat: parseFloat(result.lat), lng: parseFloat(result.lon) });
+    setCityQuery(name);
+    setShowResults(false);
+    setCityResults([]);
+  }
+
+  function clearCity() {
+    setSelectedCity(null);
+    setCityQuery("");
+  }
 
   function toggleTcg(tcgId: string) {
     setSelectedTcgs((prev) =>
@@ -55,7 +118,9 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
     const { error } = await supabase.from("profiles").insert({
       id: user.id,
       username,
-      city: city.trim() || null,
+      city: selectedCity?.name ?? null,
+      city_lat: selectedCity?.lat ?? null,
+      city_lng: selectedCity?.lng ?? null,
       preferred_tcgs: selectedTcgs,
     });
 
@@ -75,14 +140,11 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
     router.refresh();
   }
 
-
   return (
-    // Full viewport, no page scroll
     <div className="flex h-screen flex-col overflow-hidden bg-background">
 
       {/* ── Top: Logo + progress ── */}
       <div className="flex flex-shrink-0 flex-col items-center px-4 pb-4 pt-6">
-        {/* Logo */}
         <div
           className="mb-5 text-primary"
           style={{
@@ -95,22 +157,18 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
           CARDMEET
         </div>
 
-        {/* Preview banner */}
         {preview && (
           <div className="mb-4 w-full max-w-md rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs font-medium text-amber-700">
             Vorschau-Modus — Daten werden nicht gespeichert
           </div>
         )}
 
-        {/* Step indicators */}
         <div className="w-full max-w-md">
           <div className="relative flex items-start justify-between">
-            {/* Connector lines behind dots */}
             <div className="absolute left-4 right-4 top-4 flex -translate-y-1/2 items-center">
               <div className="h-px flex-1" style={{ background: step >= 2 ? "var(--primary)" : "var(--border)", transition: "background 0.4s" }} />
               <div className="h-px flex-1" style={{ background: step >= 3 ? "var(--primary)" : "var(--border)", transition: "background 0.4s" }} />
             </div>
-
             {STEPS.map((label, i) => {
               const s = i + 1;
               const done = step > s;
@@ -143,7 +201,7 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
         </div>
       </div>
 
-      {/* ── Card area: fills remaining space ── */}
+      {/* ── Card area ── */}
       <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-6">
         <div
           className="flex w-full max-w-md flex-col rounded-2xl border-2 border-border bg-card"
@@ -192,28 +250,80 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
               <div>
                 <h1 className="text-2xl font-semibold">Wo spielst du?</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  So können wir dir Sessions in deiner Nähe zeigen.
+                  So zeigen wir dir Sessions in deiner Nähe.
                 </p>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="city">
                   <MapPin className="mr-1.5 inline h-3.5 w-3.5" />
                   Stadt
                 </Label>
-                <Input
-                  id="city"
-                  placeholder="z.B. Berlin"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  autoFocus
-                  className="text-base"
-                />
+                <div className="relative">
+                  <Input
+                    id="city"
+                    placeholder="z.B. Hamburg"
+                    value={cityQuery}
+                    onChange={(e) => {
+                      setCityQuery(e.target.value);
+                      if (selectedCity) setSelectedCity(null);
+                    }}
+                    autoFocus
+                    autoComplete="off"
+                    className="text-base pr-8"
+                  />
+                  {citySearching && (
+                    <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  )}
+                  {selectedCity && (
+                    <button
+                      type="button"
+                      onClick={clearCity}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      ✕
+                    </button>
+                  )}
+
+                  {/* Dropdown */}
+                  {showResults && cityResults.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+                      {cityResults.map((r, i) => {
+                        const cityName = r.address.city ?? r.address.town ?? r.address.village ?? r.name;
+                        const state = r.address.state;
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50"
+                            onClick={() => pickCity(r)}
+                          >
+                            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                            <span className="font-medium">{cityName}</span>
+                            {state && (
+                              <span className="ml-auto text-xs text-muted-foreground">{state}</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Confirmed selection */}
+                {selectedCity && (
+                  <p className="flex items-center gap-1.5 text-xs text-green-600">
+                    <Check className="h-3 w-3" />
+                    {selectedCity.name} gefunden
+                  </p>
+                )}
               </div>
+
               <div className="flex flex-col gap-2">
                 <Button
                   className="w-full"
                   size="lg"
-                  disabled={city.trim().length < 2}
+                  disabled={!preview && !selectedCity}
                   onClick={() => setStep(3)}
                 >
                   Weiter <ArrowRight className="ml-2 h-4 w-4" />
@@ -221,11 +331,12 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
                 <Button
                   variant="ghost"
                   className="w-full text-muted-foreground"
-                  onClick={() => { setCity(""); setStep(3); }}
+                  onClick={() => { clearCity(); setStep(3); }}
                 >
                   Überspringen
                 </Button>
               </div>
+
               <button
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => setStep(1)}
@@ -245,7 +356,6 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
                 </p>
               </div>
 
-              {/* 2×2 Icon grid */}
               <div className="grid grid-cols-2 gap-3">
                 {TOP_TCGS.map((tcgId) => {
                   const tcg = TCG_LIST.find((t) => t.id === tcgId)!;
@@ -270,14 +380,12 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
                           <Check className="h-3 w-3 text-white" />
                         </div>
                       )}
-
                       <div
                         className="flex h-12 w-12 items-center justify-center rounded-xl text-sm font-bold text-white"
                         style={{ background: tcg.color }}
                       >
                         {TCG_ICONS[tcgId]}
                       </div>
-
                       <span className="px-2 text-center text-sm font-semibold leading-tight">
                         {tcg.shortName}
                       </span>
