@@ -86,7 +86,7 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
         {/* TCG Filter pills */}
         <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
           <FilterPill label="Alle" active={!activeTcg} onClick={() => setTcgFilter(null)} />
-          {TCG_LIST.map((tcg) => (
+          {TCG_LIST.filter((tcg) => ["magic", "pokemon", "yugioh", "onepiece"].includes(tcg.id)).map((tcg) => (
             <FilterPill
               key={tcg.id}
               label={tcg.shortName}
