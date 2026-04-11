@@ -10,7 +10,15 @@ import { toast } from "sonner";
 import { TCG_LIST } from "@/lib/config/tcg";
 import { ArrowRight, ArrowLeft, MapPin, Check } from "lucide-react";
 
-type FormatSelection = Record<string, string>;
+// Top 4 TCGs in Deutschland nach Spielerzahl
+const TOP_TCGS = ["magic", "pokemon", "yugioh", "onepiece"] as const;
+
+const TCG_ICONS: Record<string, string> = {
+  magic: "M",
+  pokemon: "PK",
+  yugioh: "YGO",
+  onepiece: "OP",
+};
 
 const STEPS = ["Profil", "Standort", "Spiele"] as const;
 
@@ -22,25 +30,11 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
   const [username, setUsername] = useState("");
   const [city, setCity] = useState("");
   const [selectedTcgs, setSelectedTcgs] = useState<string[]>([]);
-  const [selectedFormats, setSelectedFormats] = useState<FormatSelection>({});
 
   function toggleTcg(tcgId: string) {
-    setSelectedTcgs((prev) => {
-      if (prev.includes(tcgId)) {
-        const next = { ...selectedFormats };
-        delete next[tcgId];
-        setSelectedFormats(next);
-        return prev.filter((id) => id !== tcgId);
-      }
-      return [...prev, tcgId];
-    });
-  }
-
-  function selectFormat(tcgId: string, formatId: string) {
-    setSelectedFormats((prev) => ({
-      ...prev,
-      [tcgId]: prev[tcgId] === formatId ? "" : formatId,
-    }));
+    setSelectedTcgs((prev) =>
+      prev.includes(tcgId) ? prev.filter((id) => id !== tcgId) : [...prev, tcgId]
+    );
   }
 
   async function handleSubmit() {
@@ -58,16 +52,11 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
       return;
     }
 
-    const preferredFormats = selectedTcgs
-      .filter((tcgId) => selectedFormats[tcgId])
-      .map((tcgId) => ({ tcg: tcgId, format: selectedFormats[tcgId] }));
-
     const { error } = await supabase.from("profiles").insert({
       id: user.id,
       username,
       city: city.trim() || null,
       preferred_tcgs: selectedTcgs,
-      preferred_formats: preferredFormats,
     });
 
     if (error) {
@@ -86,7 +75,6 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
     router.refresh();
   }
 
-  const needsFormat = selectedTcgs.length > 0 && selectedTcgs.some((id) => !selectedFormats[id]);
 
   return (
     // Full viewport, no page scroll
@@ -249,104 +237,66 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
 
           {/* ── Step 3: Spiele ── */}
           {step === 3 && (
-            <div className="flex min-h-0 flex-col p-6 gap-4">
-              {/* Header — fixed */}
-              <div className="flex-shrink-0">
+            <div className="flex flex-col gap-6 p-8">
+              <div>
                 <h1 className="text-2xl font-semibold">Deine Spiele</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Wähle deine TCGs und bevorzugtes Format — oder überspringe diesen Schritt.
+                  Welche TCGs spielst du? Mehrfachauswahl möglich.
                 </p>
               </div>
 
-              {/* TCG list — scrollable, fills available space */}
-              <div className="sessions-scrollbar min-h-0 flex-1 overflow-y-auto space-y-2.5 pr-1">
-                {TCG_LIST.map((tcg) => {
-                  const isSelected = selectedTcgs.includes(tcg.id);
+              {/* 2×2 Icon grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {TOP_TCGS.map((tcgId) => {
+                  const tcg = TCG_LIST.find((t) => t.id === tcgId)!;
+                  const isSelected = selectedTcgs.includes(tcgId);
                   return (
-                    <div
-                      key={tcg.id}
-                      className="overflow-hidden rounded-xl border-2 transition-all duration-200"
-                      style={{ borderColor: isSelected ? tcg.color : "var(--border)" }}
+                    <button
+                      key={tcgId}
+                      type="button"
+                      onClick={() => toggleTcg(tcgId)}
+                      className="relative flex flex-col items-center justify-center gap-3 rounded-2xl border-2 py-7 transition-all duration-200"
+                      style={{
+                        borderColor: isSelected ? tcg.color : "var(--border)",
+                        background: isSelected ? `${tcg.color}12` : "var(--card)",
+                        boxShadow: isSelected ? `0 0 0 1px ${tcg.color}40` : "none",
+                      }}
                     >
-                      <button
-                        type="button"
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
-                        style={{ background: isSelected ? `${tcg.color}10` : "var(--card)" }}
-                        onClick={() => toggleTcg(tcg.id)}
-                      >
-                        <div
-                          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
-                          style={{ background: tcg.color }}
-                        >
-                          {tcg.shortName.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-semibold">{tcg.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {tcg.formats.length} Format{tcg.formats.length !== 1 ? "e" : ""}
-                          </div>
-                        </div>
-                        <div
-                          className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all"
-                          style={{
-                            borderColor: isSelected ? tcg.color : "var(--border)",
-                            background: isSelected ? tcg.color : "transparent",
-                          }}
-                        >
-                          {isSelected && <Check className="h-3 w-3 text-white" />}
-                        </div>
-                      </button>
-
+                      {/* Check badge */}
                       {isSelected && (
                         <div
-                          className="border-t px-4 py-3"
-                          style={{ borderColor: `${tcg.color}30`, background: `${tcg.color}06` }}
+                          className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full"
+                          style={{ background: tcg.color }}
                         >
-                          <p className="mb-2 text-xs font-medium text-muted-foreground">
-                            Bevorzugtes Format:
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {tcg.formats.map((fmt) => {
-                              const fmtSelected = selectedFormats[tcg.id] === fmt.id;
-                              return (
-                                <button
-                                  key={fmt.id}
-                                  type="button"
-                                  onClick={() => selectFormat(tcg.id, fmt.id)}
-                                  className="rounded-full border-2 px-3 py-1 text-xs font-medium transition-all"
-                                  style={
-                                    fmtSelected
-                                      ? { background: tcg.color, borderColor: tcg.color, color: "#fff" }
-                                      : { background: "var(--card)", borderColor: "var(--border)", color: "var(--muted-foreground)" }
-                                  }
-                                >
-                                  {fmt.name}
-                                </button>
-                              );
-                            })}
-                          </div>
+                          <Check className="h-3 w-3 text-white" />
                         </div>
                       )}
-                    </div>
+
+                      {/* Icon circle */}
+                      <div
+                        className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold text-white"
+                        style={{ background: tcg.color }}
+                      >
+                        {TCG_ICONS[tcgId]}
+                      </div>
+
+                      <span className="text-sm font-semibold leading-tight text-center px-2">
+                        {tcg.shortName}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
 
-              {/* Footer — fixed */}
-              <div className="flex-shrink-0 flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 <Button
                   className="w-full"
                   size="lg"
-                  disabled={loading || needsFormat}
+                  disabled={loading}
                   onClick={handleSubmit}
                 >
                   {loading ? "Speichern..." : selectedTcgs.length > 0 ? "Loslegen 🎴" : "Loslegen"}
                 </Button>
-                {needsFormat && (
-                  <p className="text-center text-xs text-muted-foreground">
-                    Bitte für jedes gewählte Spiel ein Format wählen.
-                  </p>
-                )}
                 {selectedTcgs.length === 0 && (
                   <p className="text-center text-xs text-muted-foreground">
                     Noch unentschlossen? Kein Problem — im Profil jederzeit änderbar.
