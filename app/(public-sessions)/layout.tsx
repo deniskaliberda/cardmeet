@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { AppShell } from "@/components/layout/app-shell";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 export default async function PublicSessionsLayout({
   children,
@@ -14,11 +15,12 @@ export default async function PublicSessionsLayout({
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen flex-col bg-background">
         <LandingHeader />
-        <div className="mx-auto max-w-screen-2xl px-4 pb-16 pt-8 sm:px-6">
+        <div className="mx-auto w-full max-w-screen-2xl flex-1 px-4 pb-16 pt-8 sm:px-6">
           {children}
         </div>
+        <SiteFooter />
       </div>
     );
   }

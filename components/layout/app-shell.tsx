@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { SiteFooter } from "@/components/layout/site-footer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,6 +122,8 @@ export function AppShell({
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
         {children}
       </main>
+
+      <SiteFooter />
 
       {/* Mobile Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card md:hidden">

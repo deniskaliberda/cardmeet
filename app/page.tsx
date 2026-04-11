@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingExplorer } from "@/components/landing/landing-explorer";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { Button } from "@/components/ui/button";
 import { TCG_LIST } from "@/lib/config/tcg";
 
@@ -208,29 +209,7 @@ export default async function LandingPage() {
         </section>
       </div>
 
-      {/* ── Footer ── */}
-      <footer className="border-t py-6">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 text-sm text-muted-foreground">
-          <span
-            className="font-medium text-primary"
-            style={{
-              fontFamily: "var(--font-mono), 'Fira Code', monospace",
-              letterSpacing: "-1px",
-            }}
-          >
-            CARDMEET
-          </span>
-          <span>&copy; {new Date().getFullYear()}</span>
-          <div className="flex gap-4">
-            <Link href="/impressum" className="hover:text-foreground">
-              Impressum
-            </Link>
-            <Link href="/datenschutz" className="hover:text-foreground">
-              Datenschutz
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
