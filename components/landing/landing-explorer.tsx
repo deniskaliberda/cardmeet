@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, MapPin, Users, Search, X } from "lucide-react";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { useExplorerStore } from "@/lib/stores/explorer-store";
 import type { MapSession } from "@/components/map/session-map";
@@ -25,10 +25,28 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
   const { selectedSessionId, activeTcg, setSelected, setHovered, setTcgFilter } =
     useExplorerStore();
   const listRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState("");
 
-  const filtered = activeTcg
+  const tcgFiltered = activeTcg
     ? sessions.filter((s) => s.tcg === activeTcg)
     : sessions;
+
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? tcgFiltered.filter((s) => {
+        const tcg = getTCG(s.tcg);
+        return (
+          s.title.toLowerCase().includes(q) ||
+          s.tcg.toLowerCase().includes(q) ||
+          (tcg?.name.toLowerCase().includes(q) ?? false) ||
+          (tcg?.shortName.toLowerCase().includes(q) ?? false) ||
+          s.format.toLowerCase().includes(q) ||
+          (s.city?.toLowerCase().includes(q) ?? false) ||
+          (s.location_name?.toLowerCase().includes(q) ?? false) ||
+          (s.host_username?.toLowerCase().includes(q) ?? false)
+        );
+      })
+    : tcgFiltered;
 
   useEffect(() => {
     if (!selectedSessionId || !listRef.current) return;
@@ -40,6 +58,26 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
 
   return (
     <div>
+      {/* Search bar */}
+      <div
+        className="mb-4 flex items-center gap-3 rounded-2xl border-2 border-border bg-card px-4 py-3"
+        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+      >
+        <Search className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Suche nach Spiel, Ort oder Spieler..."
+          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        />
+        {query && (
+          <button onClick={() => setQuery("")} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       {/* TCG Filter pills */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-xs text-muted-foreground">Filtern:</span>
@@ -69,7 +107,7 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <p className="font-medium">Keine Sessions gefunden</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Erstelle die erste Session!
+                {q ? `Keine Ergebnisse für „${q}"` : "Erstelle die erste Session!"}
               </p>
             </div>
           ) : (
