@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -21,7 +21,7 @@ const SessionMap = dynamic(
   }
 );
 
-export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
+export function LandingExplorer({ sessions, locationBar }: { sessions: MapSession[]; locationBar?: React.ReactNode }) {
   const { selectedSessionId, activeTcg, setSelected, setHovered, setTcgFilter } =
     useExplorerStore();
   const listRef = useRef<HTMLDivElement>(null);
@@ -41,8 +41,11 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
   return (
     <div className="grid grid-cols-[3fr_7fr] gap-5" style={{ height: "560px" }}>
 
-      {/* Left: search + filters + list */}
+      {/* Left: location bar + filters + list */}
       <div className="flex min-h-0 flex-col gap-3">
+
+        {/* Location bar slot */}
+        {locationBar}
 
         {/* TCG Filter pills */}
         <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">

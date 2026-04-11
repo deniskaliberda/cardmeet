@@ -109,14 +109,18 @@ export function SessionsPageClient({
           {location.city} · {location.radius} km Umkreis
         </p>
       </div>
-      <LocationBar
-        city={location.city}
-        radius={location.radius}
-        onLocationChange={handleLocationChange}
-        onRadiusChange={handleRadiusChange}
-        loading={loading}
+      <LandingExplorer
+        sessions={sessions}
+        locationBar={
+          <LocationBar
+            city={location.city}
+            radius={location.radius}
+            onLocationChange={handleLocationChange}
+            onRadiusChange={handleRadiusChange}
+            loading={loading}
+          />
+        }
       />
-      <LandingExplorer sessions={sessions} />
     </div>
   );
 }
