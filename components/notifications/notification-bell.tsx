@@ -1,0 +1,142 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Bell } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
+
+type Notification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  read: boolean;
+  created_at: string;
+};
+
+export function NotificationBell({ userId }: { userId: string }) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [open, setOpen] = useState(false);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Fetch initial notifications
+    supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        if (data) setNotifications(data);
+      });
+
+    // Subscribe to new notifications
+    const channel = supabase
+      .channel("notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          setNotifications((prev) => [payload.new as Notification, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
+  async function markAllRead() {
+    const supabase = createClient();
+    const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+
+    await supabase
+      .from("notifications")
+      .update({ read: true })
+      .in("id", unreadIds);
+
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => {
+          setOpen(!open);
+          if (!open && unreadCount > 0) markAllRead();
+        }}
+        className="relative flex h-9 w-9 items-center justify-center rounded-[9px] bg-muted text-foreground transition-all duration-150 hover:text-primary hover:bg-primary/5 cursor-pointer"
+      >
+        <Bell className="h-4 w-4" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 flex h-[15px] w-[15px] items-center justify-center rounded-full bg-destructive text-[9px] font-medium text-white">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute right-0 top-11 z-50 w-80 glass rounded-xl shadow-[0_4px_24px_oklch(0.224_0.018_275.1/12%)] overflow-hidden">
+            <div className="px-4 py-3 text-sm font-medium border-b border-[var(--outline-variant)]/15">
+              Benachrichtigungen
+            </div>
+            <div className="max-h-[320px] overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-xs text-muted-foreground">
+                  Keine Benachrichtigungen
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={cn(
+                      "px-4 py-3 tonal-transition hover:bg-[var(--surface-container-low)]",
+                      !n.read && "bg-primary/5"
+                    )}
+                  >
+                    <div className="text-xs font-medium">{n.title}</div>
+                    {n.body && (
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {n.body}
+                      </div>
+                    )}
+                    <div className="text-[10px] text-muted-foreground mt-1">
+                      {formatTime(n.created_at)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function formatTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Gerade eben";
+  if (mins < 60) return `vor ${mins} Min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `vor ${hours}h`;
+  return `vor ${Math.floor(hours / 24)} Tagen`;
+}
