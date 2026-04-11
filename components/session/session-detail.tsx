@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +33,7 @@ type SessionDetailProps = {
     user_id: string;
     profiles: { id: string; username: string; avatar_url: string | null } | null;
   }[];
-  currentUserId: string;
+  currentUserId: string | null;
   isHost: boolean;
   isParticipant: boolean;
 };
@@ -44,6 +45,7 @@ export function SessionDetail({
   isHost,
   isParticipant,
 }: SessionDetailProps) {
+  const router = useRouter();
   const tcg = getTCG(session.tcg);
   const powerLevel =
     session.power_level != null
@@ -56,6 +58,10 @@ export function SessionDetail({
   const canJoin = !isHost && !isParticipant && !isFull && !isCancelled;
 
   async function handleJoin() {
+    if (!currentUserId) {
+      router.push(`/login?next=/sessions/${session.id}`);
+      return;
+    }
     const result = await joinSession(session.id);
     if (result.error) toast.error(result.error);
     else toast.success("Du bist der Session beigetreten!");

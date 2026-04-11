@@ -67,8 +67,8 @@ export default async function SessionPage({
     .order("created_at", { ascending: true })
     .limit(100);
 
-  const isHost = user?.id === session.host_id;
-  const isParticipant = participants?.some((p) => p.user_id === user?.id);
+  const isHost = user != null && user.id === session.host_id;
+  const isParticipant = participants?.some((p) => p.user_id === user?.id) ?? false;
   const canChat = isHost || isParticipant;
 
   return (
@@ -76,9 +76,9 @@ export default async function SessionPage({
       <SessionDetail
         session={session}
         participants={participants ?? []}
-        currentUserId={user?.id ?? ""}
+        currentUserId={user?.id ?? null}
         isHost={isHost}
-        isParticipant={isParticipant ?? false}
+        isParticipant={isParticipant}
       />
 
       {canChat && (
