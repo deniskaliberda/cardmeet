@@ -50,6 +50,26 @@ export async function leaveSession(sessionId: string) {
   return { success: true };
 }
 
+export async function removeParticipant(sessionId: string, userId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Nicht angemeldet" };
+
+  const { error } = await supabase
+    .from("session_participants")
+    .update({ status: "removed" })
+    .eq("session_id", sessionId)
+    .eq("user_id", userId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/sessions/${sessionId}`);
+  return { success: true };
+}
+
 export async function cancelSession(sessionId: string) {
   const supabase = await createClient();
   const {

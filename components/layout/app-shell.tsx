@@ -99,19 +99,13 @@ export function AppShell({
           {/* Right: avatar + logout */}
           <div className="flex items-center gap-2">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-border bg-primary text-xs font-semibold text-white transition-colors hover:border-primary"
-                >
-                  {user.username.slice(0, 2).toUpperCase()}
-                </button>
+              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-border bg-primary text-xs font-semibold text-white transition-colors hover:border-primary focus:outline-none">
+                {user.username.slice(0, 2).toUpperCase()}
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link href="/profile" className="flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    Profil
-                  </Link>
+                <DropdownMenuItem onClick={() => router.push("/profile")}>
+                  <User className="mr-2 h-4 w-4" />
+                  Profil
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
