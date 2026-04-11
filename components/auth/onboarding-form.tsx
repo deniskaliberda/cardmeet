@@ -147,7 +147,7 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
       <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-6">
         <div
           className="flex w-full max-w-md flex-col rounded-2xl border-2 border-border bg-card"
-          style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)", maxHeight: "100%" }}
+          style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}
         >
 
           {/* ── Step 1: Profil ── */}
@@ -237,7 +237,7 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
 
           {/* ── Step 3: Spiele ── */}
           {step === 3 && (
-            <div className="flex flex-col gap-6 p-8">
+            <div className="flex flex-col gap-5 p-6">
               <div>
                 <h1 className="text-2xl font-semibold">Deine Spiele</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -255,14 +255,13 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
                       key={tcgId}
                       type="button"
                       onClick={() => toggleTcg(tcgId)}
-                      className="relative flex flex-col items-center justify-center gap-3 rounded-2xl border-2 py-7 transition-all duration-200"
+                      className="relative flex flex-col items-center justify-center gap-2.5 rounded-2xl border-2 py-5 transition-all duration-200"
                       style={{
                         borderColor: isSelected ? tcg.color : "var(--border)",
                         background: isSelected ? `${tcg.color}12` : "var(--card)",
                         boxShadow: isSelected ? `0 0 0 1px ${tcg.color}40` : "none",
                       }}
                     >
-                      {/* Check badge */}
                       {isSelected && (
                         <div
                           className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full"
@@ -272,15 +271,14 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
                         </div>
                       )}
 
-                      {/* Icon circle */}
                       <div
-                        className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold text-white"
+                        className="flex h-12 w-12 items-center justify-center rounded-xl text-sm font-bold text-white"
                         style={{ background: tcg.color }}
                       >
                         {TCG_ICONS[tcgId]}
                       </div>
 
-                      <span className="text-sm font-semibold leading-tight text-center px-2">
+                      <span className="px-2 text-center text-sm font-semibold leading-tight">
                         {tcg.shortName}
                       </span>
                     </button>
