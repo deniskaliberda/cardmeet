@@ -18,6 +18,7 @@ export type MapSession = {
   status: string;
   city: string | null;
   location_name: string | null;
+  postal_code: string | null;
   lat: number;
   lng: number;
   scheduled_at: string;

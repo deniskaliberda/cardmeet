@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,11 +29,73 @@ import {
   Sparkles,
 } from "lucide-react";
 
+type NominatimResult = {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+  address: {
+    postcode?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    state?: string;
+  };
+};
+
 export function CreateSessionForm() {
   const [tcgId, setTcgId] = useState("");
   const [formatId, setFormatId] = useState("");
   const [powerLevel, setPowerLevel] = useState("");
   const [step, setStep] = useState(1);
+
+  // Location geocoding state
+  const [locationQuery, setLocationQuery] = useState("");
+  const [locationResults, setLocationResults] = useState<NominatimResult[]>([]);
+  const [resolvedLat, setResolvedLat] = useState("52.52");
+  const [resolvedLng, setResolvedLng] = useState("13.405");
+  const [resolvedCity, setResolvedCity] = useState("");
+  const [resolvedPostalCode, setResolvedPostalCode] = useState("");
+  const [locationLabel, setLocationLabel] = useState("");
+  const [showResults, setShowResults] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (locationQuery.length < 3) {
+      setLocationResults([]);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationQuery + " Deutschland")}&countrycodes=de&format=json&addressdetails=1&limit=5`,
+          { headers: { "Accept-Language": "de" } }
+        );
+        const data: NominatimResult[] = await res.json();
+        setLocationResults(data);
+        setShowResults(true);
+      } catch {
+        // silently fail
+      }
+    }, 400);
+  }, [locationQuery]);
+
+  function selectLocation(result: NominatimResult) {
+    const city =
+      result.address.city ??
+      result.address.town ??
+      result.address.village ??
+      "";
+    setResolvedLat(result.lat);
+    setResolvedLng(result.lon);
+    setResolvedCity(city);
+    setResolvedPostalCode(result.address.postcode ?? "");
+    setLocationLabel(result.display_name.split(",").slice(0, 2).join(","));
+    setLocationQuery("");
+    setLocationResults([]);
+    setShowResults(false);
+  }
 
   const tcg = tcgId ? getTCG(tcgId) : undefined;
   const format = tcg?.formats.find((f) => f.id === formatId);
@@ -400,20 +462,66 @@ export function CreateSessionForm() {
                 Wo trefft ihr euch?
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Die Stadt ist Pflicht — den genauen Treffpunkt kannst du auch spaeter im Chat mit deiner Gruppe klaeren
+                Adresse oder Ort suchen — PLZ wird automatisch ermittelt
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Address search */}
               <div className="space-y-2">
-                <Label htmlFor="city">Stadt</Label>
-                <Input
-                  id="city"
-                  name="city"
-                  placeholder="z.B. Berlin"
-                  required
-                  className="text-base"
-                />
+                <Label>Adresse / Ort suchen</Label>
+                <div className="relative">
+                  <Input
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    placeholder="z.B. Alexanderplatz Berlin oder 10178..."
+                    className="text-base"
+                    autoComplete="off"
+                  />
+                  {showResults && locationResults.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-card shadow-lg">
+                      {locationResults.map((r) => (
+                        <button
+                          key={r.place_id}
+                          type="button"
+                          className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-sm hover:bg-muted/60 first:rounded-t-xl last:rounded-b-xl"
+                          onClick={() => selectLocation(r)}
+                        >
+                          <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                          <span className="line-clamp-2 text-xs">{r.display_name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Resolved location display */}
+              {locationLabel && (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm">
+                  <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-medium">{locationLabel}</p>
+                    {resolvedPostalCode && (
+                      <p className="text-xs text-muted-foreground">
+                        PLZ: {resolvedPostalCode} · {resolvedCity}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setLocationLabel("");
+                      setResolvedCity("");
+                      setResolvedPostalCode("");
+                      setResolvedLat("52.52");
+                      setResolvedLng("13.405");
+                    }}
+                  >
+                    ändern
+                  </button>
+                </div>
+              )}
 
               <Separator />
 
@@ -425,18 +533,20 @@ export function CreateSessionForm() {
                 <Input
                   id="location_name"
                   name="location_name"
-                  placeholder="z.B. Funtainment Berlin, Cafe XY, bei mir zu Hause..."
+                  placeholder="z.B. Café XY, Spieleladen, bei mir zu Hause..."
                 />
                 <p className="text-xs text-muted-foreground">
-                  Tipp: Viele Gruppen klaren den genauen Ort erst im Session-Chat, nachdem sich genug Spieler gefunden haben.
+                  Tipp: Viele Gruppen klären den genauen Ort erst im Session-Chat.
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Default location */}
-          <input type="hidden" name="lat" value="52.52" />
-          <input type="hidden" name="lng" value="13.405" />
+          {/* Hidden fields */}
+          <input type="hidden" name="lat" value={resolvedLat} />
+          <input type="hidden" name="lng" value={resolvedLng} />
+          <input type="hidden" name="city" value={resolvedCity || "Berlin"} />
+          <input type="hidden" name="postal_code" value={resolvedPostalCode} />
 
           <div className="flex gap-2">
             <Button

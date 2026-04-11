@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createSessionSchema } from "@/lib/validations/session";
 
 export async function createSession(formData: FormData) {
+  const postalCode = (formData.get("postal_code") as string) || null;
+
   const raw = {
     title: formData.get("title"),
     description: formData.get("description") || undefined,
@@ -45,6 +47,7 @@ export async function createSession(formData: FormData) {
       max_players: parsed.data.max_players,
       city: parsed.data.city,
       location_name: parsed.data.location_name ?? null,
+      postal_code: postalCode,
       location: `SRID=4326;POINT(${parsed.data.lng} ${parsed.data.lat})`,
       scheduled_at: parsed.data.scheduled_at,
     })

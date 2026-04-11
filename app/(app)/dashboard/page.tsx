@@ -108,6 +108,7 @@ export default async function HomePage({
     scheduled_at: s.scheduled_at,
     host_username: s.profiles?.username ?? null,
     host_avatar: s.profiles?.avatar_url ?? null,
+    postal_code: (s.postal_code as string) ?? null,
   }));
 
   return (

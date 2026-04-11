@@ -43,6 +43,7 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
           s.format.toLowerCase().includes(q) ||
           (s.city?.toLowerCase().includes(q) ?? false) ||
           (s.location_name?.toLowerCase().includes(q) ?? false) ||
+          (s.postal_code?.toLowerCase().includes(q) ?? false) ||
           (s.host_username?.toLowerCase().includes(q) ?? false)
         );
       })

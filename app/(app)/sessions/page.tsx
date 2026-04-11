@@ -23,6 +23,7 @@ export default async function SessionsPage() {
     status: s.status as string,
     city: (s.city as string) ?? null,
     location_name: (s.location_name as string) ?? null,
+    postal_code: (s.postal_code as string) ?? null,
     lat: s.lat as number,
     lng: s.lng as number,
     scheduled_at: s.scheduled_at as string,
