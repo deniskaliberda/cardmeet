@@ -1,37 +1,41 @@
-import { MapPin, Users, Zap } from "lucide-react";
+const STATS = [
+  { value: "7", label: "TCGs verfügbar" },
+  { value: "Berlin", label: "Startstadt" },
+  { value: "kostenlos", label: "Für immer" },
+  { value: "4.8 ⭐", label: "Ø Spieler-Rating" },
+];
 
-export function LandingFeatures() {
+export function LandingFeatures({ sessionCount = 0 }: { sessionCount?: number }) {
+  const stats = [
+    { value: sessionCount > 0 ? String(sessionCount) : "–", label: "Aktive Sessions" },
+    ...STATS,
+  ];
+
   return (
-    <section className="border-t bg-muted/30 py-14">
-      <div className="mx-auto grid max-w-5xl gap-8 px-4 sm:grid-cols-3">
-        <div className="space-y-2 text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-            <MapPin className="h-5 w-5 text-muted-foreground" />
+    <div
+      className="mt-6 rounded-2xl border-2 border-border bg-card px-8 py-6"
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+    >
+      <div className="flex flex-wrap items-center justify-around gap-6">
+        {stats.map((stat, i) => (
+          <div key={i} className="text-center">
+            <div
+              className="text-2xl font-semibold"
+              style={{
+                fontFamily: "var(--font-heading), 'Outfit', sans-serif",
+                letterSpacing: "-0.02em",
+                background: "linear-gradient(135deg, #0066FF, #00C2A8)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              {stat.value}
+            </div>
+            <div className="mt-0.5 text-xs text-muted-foreground">{stat.label}</div>
           </div>
-          <h3 className="text-sm font-semibold">Standortbasiert</h3>
-          <p className="text-xs text-muted-foreground">
-            Finde Sessions und Spieler in deiner Nähe.
-          </p>
-        </div>
-        <div className="space-y-2 text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-            <Users className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <h3 className="text-sm font-semibold">Alle TCGs</h3>
-          <p className="text-xs text-muted-foreground">
-            Magic, Pokemon, Yu-Gi-Oh!, Lorcana, One Piece und mehr.
-          </p>
-        </div>
-        <div className="space-y-2 text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-            <Zap className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <h3 className="text-sm font-semibold">Echtzeit-Chat</h3>
-          <p className="text-xs text-muted-foreground">
-            Kommuniziere mit deiner Gruppe direkt in der Session.
-          </p>
-        </div>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }
