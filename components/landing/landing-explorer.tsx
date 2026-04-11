@@ -58,52 +58,52 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
   }, [selectedSessionId]);
 
   return (
-    <div>
-      {/* Search bar */}
-      <div
-        className="mb-4 flex items-center gap-3 rounded-2xl border-2 border-border bg-card px-4 py-3"
-        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-      >
-        <Search className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Suche nach Spiel, Ort oder Spieler..."
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
-        {query && (
-          <button onClick={() => setQuery("")} className="text-muted-foreground hover:text-foreground">
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+    <div className="grid grid-cols-[3fr_7fr] gap-5" style={{ height: "560px" }}>
 
-      {/* TCG Filter pills */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="text-xs text-muted-foreground">Filtern:</span>
-        <FilterPill label="Alle" active={!activeTcg} onClick={() => setTcgFilter(null)} />
-        {TCG_LIST.map((tcg) => (
-          <FilterPill
-            key={tcg.id}
-            label={tcg.shortName}
-            active={activeTcg === tcg.id}
-            color={tcg.color}
-            onClick={() => setTcgFilter(activeTcg === tcg.id ? null : tcg.id)}
+      {/* Left: search + filters + list */}
+      <div className="flex min-h-0 flex-col gap-3">
+
+        {/* Search bar */}
+        <div
+          className="flex flex-shrink-0 items-center gap-2 rounded-2xl border-2 border-border bg-card px-3 py-2.5"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+        >
+          <Search className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Spiel, Ort oder Spieler..."
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
-        ))}
-      </div>
+          {query && (
+            <button onClick={() => setQuery("")} className="text-muted-foreground hover:text-foreground">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
-      {/* Split view: 3fr list | 7fr map */}
-      <div className="grid h-[480px] grid-cols-[3fr_7fr] gap-5">
+        {/* TCG Filter pills */}
+        <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+          <FilterPill label="Alle" active={!activeTcg} onClick={() => setTcgFilter(null)} />
+          {TCG_LIST.map((tcg) => (
+            <FilterPill
+              key={tcg.id}
+              label={tcg.shortName}
+              active={activeTcg === tcg.id}
+              color={tcg.color}
+              onClick={() => setTcgFilter(activeTcg === tcg.id ? null : tcg.id)}
+            />
+          ))}
+        </div>
 
-        {/* Left: Session list */}
-        <div ref={listRef} className="sessions-scrollbar overflow-y-auto pr-1">
-          <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{filtered.length} Sessions gefunden</span>
-            <span className="text-primary">Berlin · 50 km</span>
-          </div>
+        {/* Session count */}
+        <div className="flex-shrink-0 text-xs text-muted-foreground">
+          {filtered.length} Session{filtered.length !== 1 ? "s" : ""} gefunden
+        </div>
 
+        {/* Session list */}
+        <div ref={listRef} className="sessions-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <p className="font-medium">Keine Sessions gefunden</p>
@@ -128,19 +128,14 @@ export function LandingExplorer({ sessions }: { sessions: MapSession[] }) {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Right: Map */}
-        <div
-          className="overflow-hidden rounded-2xl border-2 border-border bg-card"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-        >
-          <div className="flex items-center border-b border-border px-5 py-3.5">
-            <span className="text-sm font-medium">🗺️ Sessions in Berlin</span>
-          </div>
-          <div className="relative" style={{ height: "calc(100% - 53px)" }}>
-            <SessionMap sessions={filtered} />
-          </div>
-        </div>
+      {/* Right: Map – starts at the very top, full height */}
+      <div
+        className="overflow-hidden rounded-2xl border-2 border-border"
+        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+      >
+        <SessionMap sessions={filtered} />
       </div>
     </div>
   );

@@ -291,6 +291,6 @@ export function SessionMap({ sessions }: { sessions: MapSession[] }) {
   }
 
   return (
-    <div ref={containerRef} className="h-full w-full rounded-lg" />
+    <div ref={containerRef} className="h-full w-full" />
   );
 }
