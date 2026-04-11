@@ -1,10 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { LandingExplorer } from "@/components/landing/landing-explorer";
+import { SessionsPageClient } from "@/components/session/sessions-page-client";
 
 export const metadata = { title: "Sessions finden" };
-export const revalidate = 60;
 
-// Fallback: Berlin
 const DEFAULT_LAT = 52.52;
 const DEFAULT_LNG = 13.405;
 const DEFAULT_CITY = "Berlin";
@@ -14,7 +12,6 @@ export default async function SessionsPage() {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Use the user's saved city if available
   let lat = DEFAULT_LAT;
   let lng = DEFAULT_LNG;
   let cityLabel = DEFAULT_CITY;
@@ -33,12 +30,11 @@ export default async function SessionsPage() {
     }
   }
 
-  const { data: sessions, error: rpcError } = await supabase.rpc("nearby_sessions", {
+  const { data: sessions } = await supabase.rpc("nearby_sessions", {
     p_lat: lat,
     p_lng: lng,
-    radius_km: 50,
+    radius_km: 25,
   });
-  if (rpcError) console.error("[sessions page] RPC error:", rpcError);
 
   const mappedSessions = (sessions ?? []).map((s: Record<string, unknown>) => ({
     id: s.id as string,
@@ -59,19 +55,11 @@ export default async function SessionsPage() {
   }));
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Sessions in deiner Nähe</h1>
-        <p className="text-sm text-muted-foreground">
-          {cityLabel} & Umland · 50 km Radius
-        </p>
-      </div>
-      {rpcError && (
-        <pre className="rounded bg-red-100 p-3 text-xs text-red-800 overflow-auto">
-          {JSON.stringify(rpcError, null, 2)}
-        </pre>
-      )}
-      <LandingExplorer sessions={mappedSessions} />
-    </div>
+    <SessionsPageClient
+      initialSessions={mappedSessions}
+      serverLat={lat}
+      serverLng={lng}
+      serverCity={cityLabel}
+    />
   );
 }
