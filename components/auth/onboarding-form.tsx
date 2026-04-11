@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ type FormatSelection = Record<string, string>; // tcgId → formatId
 
 const STEPS = ["Profil", "Standort", "Spiele"] as const;
 
-export function OnboardingForm() {
+export function OnboardingForm({ preview = false }: { preview?: boolean }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -50,6 +50,11 @@ export function OnboardingForm() {
   }
 
   async function handleSubmit() {
+    if (preview) {
+      toast.success("Vorschau: Onboarding abgeschlossen! ✓");
+      return;
+    }
+
     setLoading(true);
     const supabase = createClient();
     const {
@@ -154,6 +159,13 @@ export function OnboardingForm() {
         </div>
       </div>
 
+      {/* Preview banner */}
+      {preview && (
+        <div className="mb-4 w-full max-w-md rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-xs font-medium text-amber-700">
+          Vorschau-Modus — Daten werden nicht gespeichert
+        </div>
+      )}
+
       {/* Card */}
       <div
         className="w-full max-w-md rounded-2xl border-2 border-border bg-card p-8"
@@ -189,7 +201,7 @@ export function OnboardingForm() {
             <Button
               className="w-full"
               size="lg"
-              disabled={username.trim().length < 3 || !/^[a-zA-Z0-9_-]+$/.test(username.trim())}
+              disabled={!preview && (username.trim().length < 3 || !/^[a-zA-Z0-9_-]+$/.test(username.trim()))}
               onClick={() => setStep(2)}
             >
               Weiter <ArrowRight className="ml-2 h-4 w-4" />
