@@ -34,8 +34,8 @@ export default async function SessionsPage() {
   }
 
   const { data: sessions, error: rpcError } = await supabase.rpc("nearby_sessions", {
-    lat,
-    lng,
+    p_lat: lat,
+    p_lng: lng,
     radius_km: 50,
   });
   if (rpcError) console.error("[sessions page] RPC error:", rpcError);
