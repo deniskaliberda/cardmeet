@@ -33,11 +33,12 @@ export default async function SessionsPage() {
     }
   }
 
-  const { data: sessions } = await supabase.rpc("nearby_sessions", {
+  const { data: sessions, error: rpcError } = await supabase.rpc("nearby_sessions", {
     lat,
     lng,
     radius_km: 50,
   });
+  if (rpcError) console.error("[sessions page] RPC error:", rpcError);
 
   const mappedSessions = (sessions ?? []).map((s: Record<string, unknown>) => ({
     id: s.id as string,
@@ -65,6 +66,11 @@ export default async function SessionsPage() {
           {cityLabel} & Umland · 50 km Radius
         </p>
       </div>
+      {rpcError && (
+        <pre className="rounded bg-red-100 p-3 text-xs text-red-800 overflow-auto">
+          {JSON.stringify(rpcError, null, 2)}
+        </pre>
+      )}
       <LandingExplorer sessions={mappedSessions} />
     </div>
   );
