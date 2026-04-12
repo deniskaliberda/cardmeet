@@ -70,6 +70,29 @@ export async function removeParticipant(sessionId: string, userId: string) {
   return { success: true };
 }
 
+export async function pauseSession(sessionId: string, currentStatus: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Nicht angemeldet" };
+
+  const newStatus = currentStatus === "paused" ? "open" : "paused";
+
+  const { error } = await supabase
+    .from("sessions")
+    .update({ status: newStatus })
+    .eq("id", sessionId)
+    .eq("host_id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/sessions/${sessionId}`);
+  revalidatePath("/my-sessions");
+  return { success: true, newStatus };
+}
+
 export async function cancelSession(sessionId: string) {
   const supabase = await createClient();
   const {

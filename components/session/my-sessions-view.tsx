@@ -11,7 +11,7 @@ import { SessionChat } from "@/components/session/session-chat";
 import { ParticipantList } from "@/components/session/participant-list";
 import { getTCG, getPowerLevel } from "@/lib/config/tcg";
 import { TCGIcon } from "@/components/icons/tcg-icons";
-import { leaveSession, cancelSession } from "@/app/(app)/sessions/actions";
+import { leaveSession, cancelSession, pauseSession } from "@/app/(app)/sessions/actions";
 import { ReviewForm } from "@/components/review/review-form";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -323,6 +323,20 @@ function SessionDetailColumn({
     });
   }
 
+  function handlePause() {
+    startTransition(async () => {
+      const result = await pauseSession(session.id, session.status);
+      if (result && "error" in result) {
+        toast.error(result.error);
+      } else {
+        toast.success(
+          session.status === "paused" ? "Session fortgesetzt" : "Session pausiert"
+        );
+        router.refresh();
+      }
+    });
+  }
+
   return (
     <div className="rounded-2xl bg-card p-5 shadow-[0_2px_8px_oklch(0.224_0.018_275.1/8%),0_0_0_1px_oklch(0.829_0.026_275.8/10%)] flex flex-col gap-3.5 overflow-y-auto">
       {/* Badge + Title */}
@@ -417,6 +431,15 @@ function SessionDetailColumn({
           <>
             <Button size="sm" className="w-full rounded-xl text-xs" disabled={pending}>
               ✏️ Bearbeiten
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full rounded-xl text-xs"
+              onClick={handlePause}
+              disabled={pending}
+            >
+              {session.status === "paused" ? "▶ Fortsetzen" : "⏸ Pausieren"}
             </Button>
             <Button
               size="sm"

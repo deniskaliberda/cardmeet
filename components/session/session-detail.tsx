@@ -119,10 +119,22 @@ export function SessionDetail({
             <Clock className="h-4 w-4" />
             {format(scheduledDate, "HH:mm", { locale: de })} Uhr
           </div>
-          {(session.location_name || session.city) && (
+          {(isHost || isParticipant) && session.location_name && (
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              {session.location_name ?? session.city}
+              {session.location_name}
+            </div>
+          )}
+          {!isHost && !isParticipant && session.city && (
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              {session.city}
+            </div>
+          )}
+          {(isHost || isParticipant) && !session.location_name && session.city && (
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              {session.city}
             </div>
           )}
           <div className="flex items-center gap-2">
