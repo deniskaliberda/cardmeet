@@ -5,51 +5,52 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { createSession } from "@/app/(app)/sessions/create/actions";
 import { toast } from "sonner";
-import {
-  Check,
-  ChevronRight,
-  ChevronLeft,
-  MapPin,
-  Calendar,
-  Users,
-  Pencil,
-  Sparkles,
-} from "lucide-react";
+import { Check, ChevronLeft, MapPin, Minus, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type StepId =
+  | "tcg"
+  | "format"
+  | "power_level"
+  | "players"
+  | "title"
+  | "description"
+  | "datetime"
+  | "location";
+
+const ALL_STEPS: StepId[] = [
+  "tcg",
+  "format",
+  "power_level",
+  "players",
+  "title",
+  "description",
+  "datetime",
+  "location",
+];
 
 type NominatimResult = {
   place_id: number;
   display_name: string;
   lat: string;
   lon: string;
-  address: {
-    postcode?: string;
-    city?: string;
-    town?: string;
-    village?: string;
-    state?: string;
-  };
+  address: { postcode?: string; city?: string; town?: string; village?: string };
 };
 
 export function CreateSessionForm() {
+  const [step, setStep] = useState<StepId>("tcg");
   const [tcgId, setTcgId] = useState("");
   const [formatId, setFormatId] = useState("");
   const [powerLevel, setPowerLevel] = useState("");
-  const [step, setStep] = useState(1);
+  const [maxPlayers, setMaxPlayers] = useState(4);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [locationName, setLocationName] = useState("");
 
-  // Location geocoding state
   const [locationQuery, setLocationQuery] = useState("");
   const [locationResults, setLocationResults] = useState<NominatimResult[]>([]);
   const [resolvedLat, setResolvedLat] = useState("52.52");
@@ -61,10 +62,7 @@ export function CreateSessionForm() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (locationQuery.length < 3) {
-      setLocationResults([]);
-      return;
-    }
+    if (locationQuery.length < 3) { setLocationResults([]); return; }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
@@ -72,26 +70,19 @@ export function CreateSessionForm() {
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationQuery + " Deutschland")}&countrycodes=de&format=json&addressdetails=1&limit=5`,
           { headers: { "Accept-Language": "de" } }
         );
-        const data: NominatimResult[] = await res.json();
-        setLocationResults(data);
+        setLocationResults(await res.json());
         setShowResults(true);
-      } catch {
-        // silently fail
-      }
+      } catch {}
     }, 400);
   }, [locationQuery]);
 
-  function selectLocation(result: NominatimResult) {
-    const city =
-      result.address.city ??
-      result.address.town ??
-      result.address.village ??
-      "";
-    setResolvedLat(result.lat);
-    setResolvedLng(result.lon);
+  function selectLocation(r: NominatimResult) {
+    const city = r.address.city ?? r.address.town ?? r.address.village ?? "";
+    setResolvedLat(r.lat);
+    setResolvedLng(r.lon);
     setResolvedCity(city);
-    setResolvedPostalCode(result.address.postcode ?? "");
-    setLocationLabel(result.display_name.split(",").slice(0, 2).join(","));
+    setResolvedPostalCode(r.address.postcode ?? "");
+    setLocationLabel(r.display_name.split(",").slice(0, 2).join(","));
     setLocationQuery("");
     setLocationResults([]);
     setShowResults(false);
@@ -101,410 +92,393 @@ export function CreateSessionForm() {
   const format = tcg?.formats.find((f) => f.id === formatId);
   const hasPowerLevels = (format?.powerLevels?.length ?? 0) > 0;
 
-  const totalSteps = 3;
+  function activeSteps(): StepId[] {
+    return ALL_STEPS.filter((s) => s !== "power_level" || hasPowerLevels);
+  }
+
+  function advance(from: StepId) {
+    const steps = activeSteps();
+    const next = steps[steps.indexOf(from) + 1];
+    if (next) setStep(next);
+  }
+
+  function goBack() {
+    const steps = activeSteps();
+    const prev = steps[steps.indexOf(step) - 1];
+    if (prev) setStep(prev);
+  }
+
+  const steps = activeSteps();
+  const stepIndex = steps.indexOf(step);
+  const progress = ((stepIndex + 1) / steps.length) * 100;
+  const isFirst = stepIndex === 0;
 
   async function handleSubmit(formData: FormData) {
+    // Inject controlled state into the FormData
+    formData.set("tcg", tcgId);
+    formData.set("format", formatId);
+    if (powerLevel) formData.set("power_level", powerLevel);
+    formData.set("max_players", String(maxPlayers));
+    formData.set("title", title);
+    if (description) formData.set("description", description);
+    formData.set("scheduled_at", scheduledAt);
+    formData.set("lat", resolvedLat);
+    formData.set("lng", resolvedLng);
+    formData.set("city", resolvedCity || "Berlin");
+    formData.set("postal_code", resolvedPostalCode);
+    formData.set("location_name", locationName);
+
     const result = await createSession(formData);
-    if (result?.error) {
-      toast.error(result.error);
-    }
+    if (result?.error) toast.error(result.error);
   }
 
   return (
-    <form action={handleSubmit}>
-      <input type="hidden" name="tcg" value={tcgId} />
-      <input type="hidden" name="format" value={formatId} />
-      {powerLevel && <input type="hidden" name="power_level" value={powerLevel} />}
-
+    <form action={handleSubmit} className="mx-auto max-w-lg">
       {/* Progress bar */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          {[
-            { num: 1, label: "Spiel" },
-            { num: 2, label: "Details" },
-            { num: 3, label: "Wann & Wo" },
-          ].map((s, i) => (
-            <div key={s.num} className="flex items-center gap-2">
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
-                  step >= s.num
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {step > s.num ? <Check className="h-4 w-4" /> : s.num}
-              </div>
-              <span className={`text-sm hidden sm:inline ${step >= s.num ? "text-foreground" : "text-muted-foreground"}`}>
-                {s.label}
-              </span>
-              {i < 2 && (
-                <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />
-              )}
-            </div>
-          ))}
+      <div className="mb-8">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            Schritt {stepIndex + 1} von {steps.length}
+          </span>
+          {!isFirst && (
+            <button
+              type="button"
+              onClick={goBack}
+              className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Zurück
+            </button>
+          )}
         </div>
-        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${(step / totalSteps) * 100}%` }}
+            className="h-full rounded-full bg-primary transition-all duration-500"
+            style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
-      {/* ==================== STEP 1: Spiel ==================== */}
-      <div className={step !== 1 ? "hidden" : "space-y-6"}>
-        {/* TCG Selection */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Welches Spiel?
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {TCG_LIST.map((t) => {
-                const isSelected = tcgId === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className={`relative flex items-center gap-2 rounded-lg border-2 px-3 py-2.5 text-left text-sm font-medium transition-all ${
-                      isSelected
-                        ? "border-current shadow-sm"
-                        : "border-transparent bg-muted/50 hover:bg-muted"
-                    }`}
-                    style={isSelected ? { color: t.color, borderColor: t.color } : undefined}
-                    onClick={() => {
-                      setTcgId(t.id);
-                      setFormatId("");
-                      setPowerLevel("");
-                    }}
-                  >
-                    {isSelected && (
-                      <Check className="absolute right-2 top-2 h-3.5 w-3.5" />
-                    )}
-                    <span
-                      className="h-3 w-3 rounded-full shrink-0"
-                      style={{ backgroundColor: t.color }}
-                    />
-                    {t.shortName}
-                  </button>
-                );
-              })}
+      {/* Animated step content */}
+      <div key={step} className="animate-in fade-in slide-in-from-right-4 duration-200">
+
+        {/* ── Step: TCG ─────────────────────────────────────────── */}
+        {step === "tcg" && (
+          <div className="space-y-5">
+            <StepHeading title="Welches Spiel?" sub="Wähle das TCG für deine Session" />
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              {TCG_LIST.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setTcgId(t.id);
+                    setFormatId("");
+                    setPowerLevel("");
+                    advance("tcg");
+                  }}
+                  className="relative flex flex-col items-start gap-2 rounded-2xl border-2 p-4 text-left transition-all hover:shadow-md cursor-pointer"
+                  style={{
+                    borderColor: tcgId === t.id ? t.color : "var(--border)",
+                    background: tcgId === t.id ? `${t.color}10` : "var(--card)",
+                  }}
+                >
+                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: t.color }} />
+                  <span className="text-sm font-semibold leading-tight">{t.shortName}</span>
+                  {tcgId === t.id && (
+                    <Check className="absolute right-2.5 top-2.5 h-3.5 w-3.5" style={{ color: t.color }} />
+                  )}
+                </button>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Format Selection */}
-        {tcg && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Format</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={formatId} onValueChange={(v) => { setFormatId(v ?? ""); setPowerLevel(""); }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Format wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tcg.formats.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Power Level Selection */}
-        {hasPowerLevels && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Power Level</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Waehle das Niveau, damit Mitspieler passende Decks mitbringen
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {format!.powerLevels!.map((pl) => {
-                  const isSelected = powerLevel === String(pl.level);
-                  return (
-                    <button
-                      key={pl.level}
-                      type="button"
-                      className={`flex w-full items-center gap-3 rounded-lg border-2 px-4 py-3 text-left transition-all ${
-                        isSelected
-                          ? "shadow-md"
-                          : "border-transparent bg-muted/50 hover:bg-muted"
-                      }`}
-                      style={
-                        isSelected
-                          ? { borderColor: pl.color, boxShadow: `0 0 12px ${pl.color}35` }
-                          : undefined
-                      }
-                      onClick={() => setPowerLevel(String(pl.level))}
-                    >
-                      <div
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                        style={{ backgroundColor: pl.color }}
-                      >
-                        {pl.level}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{pl.name}</span>
-                          {isSelected && (
-                            <Check className="h-4 w-4" style={{ color: pl.color }} />
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">{pl.description}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Player Count */}
-        {format && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Users className="h-4 w-4 text-primary" />
-                Max. Spieler
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input
-                name="max_players"
-                type="number"
-                min={format.playerCount.min}
-                max={format.playerCount.max}
-                defaultValue={format.playerCount.default}
-              />
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Du als Host zaehlst bereits als Spieler 1
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        <Button
-          type="button"
-          className="w-full"
-          size="lg"
-          disabled={!tcgId || !formatId || (hasPowerLevels && !powerLevel)}
-          onClick={() => setStep(2)}
-        >
-          Weiter
-          <ChevronRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* ==================== STEP 2: Details ==================== */}
-      <div className={step !== 2 ? "hidden" : "space-y-6"}>
-        {/* Summary from Step 1 */}
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-2 flex-1">
-            {tcg && (
-              <Badge style={{ backgroundColor: tcg.color, color: "#fff" }}>
-                {tcg.shortName}
-              </Badge>
-            )}
-            {format && <Badge variant="outline">{format.name}</Badge>}
-            {powerLevel && format?.powerLevels && (() => {
-              const pl = format.powerLevels.find((p) => p.level === Number(powerLevel));
-              return pl ? (
-                <Badge variant="outline" style={{ borderColor: pl.color, color: pl.color }}>
-                  Lvl {pl.level} — {pl.name}
-                </Badge>
-              ) : null;
-            })()}
           </div>
-          <button
-            type="button"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => setStep(1)}
-            title="Auswahl ändern"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-        </div>
+        )}
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Pencil className="h-4 w-4 text-primary" />
-              Beschreibe deine Runde
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Ein guter Titel hilft anderen, die passende Session zu finden
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="title">Titel</Label>
-              <Input
-                id="title"
-                name="title"
-                placeholder={
-                  tcgId === "magic" && formatId === "commander"
-                    ? "z.B. Casual Commander Runde am Abend"
-                    : tcgId === "pokemon"
-                    ? "z.B. Pokemon Standard Training"
-                    : "z.B. Entspannte Runde nach Feierabend"
-                }
-                required
-                minLength={3}
-                maxLength={100}
-                className="text-base"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">
-                Beschreibung
-                <span className="ml-1 text-muted-foreground font-normal">(optional)</span>
-              </Label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder="Erzähl etwas über die Runde — z.B. welche Regeln gelten, ob Proxys erlaubt sind, ob es Snacks gibt..."
-                maxLength={500}
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setStep(1)}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Zurueck
-          </Button>
-          <Button
-            type="button"
-            className="flex-1"
-            onClick={() => setStep(3)}
-          >
-            Weiter
-            <ChevronRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* ==================== STEP 3: Wann & Wo ==================== */}
-      <div className={step !== 3 ? "hidden" : "space-y-6"}>
-        {/* Summary */}
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-2 flex-1">
-            {tcg && (
-              <Badge style={{ backgroundColor: tcg.color, color: "#fff" }}>
+        {/* ── Step: Format ──────────────────────────────────────── */}
+        {step === "format" && tcg && (
+          <div className="space-y-5">
+            <div>
+              <span
+                className="mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+                style={{ background: `${tcg.color}15`, color: tcg.color }}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tcg.color }} />
                 {tcg.shortName}
-              </Badge>
-            )}
-            {format && <Badge variant="outline">{format.name}</Badge>}
-            {powerLevel && format?.powerLevels && (() => {
-              const pl = format.powerLevels.find((p) => p.level === Number(powerLevel));
-              return pl ? (
-                <Badge variant="outline" style={{ borderColor: pl.color, color: pl.color }}>
-                  Lvl {pl.level}
-                </Badge>
-              ) : null;
-            })()}
+              </span>
+              <StepHeading title="Welches Format?" sub="Wähle das Spielformat" />
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {tcg.formats.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => {
+                    setFormatId(f.id);
+                    setPowerLevel("");
+                    setMaxPlayers(f.playerCount.default);
+                    advance("format");
+                  }}
+                  className="flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all hover:shadow-sm cursor-pointer"
+                  style={{
+                    borderColor: formatId === f.id ? tcg.color : "var(--border)",
+                    background: formatId === f.id ? `${tcg.color}08` : "var(--card)",
+                  }}
+                >
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold">{f.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {f.playerCount.min}–{f.playerCount.max} Spieler
+                    </div>
+                  </div>
+                  {formatId === f.id && (
+                    <Check className="h-4 w-4 shrink-0" style={{ color: tcg.color }} />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-          <button
-            type="button"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => setStep(1)}
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-        </div>
+        )}
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Calendar className="h-4 w-4 text-primary" />
-              Wann geht's los?
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Input
-              name="scheduled_at"
-              type="datetime-local"
-              required
-              min={new Date().toISOString().slice(0, 16)}
-              className="text-base"
+        {/* ── Step: Power Level ─────────────────────────────────── */}
+        {step === "power_level" && format?.powerLevels && (
+          <div className="space-y-5">
+            <StepHeading
+              title="Power Level?"
+              sub="Damit Mitspieler passende Decks mitbringen"
             />
-          </CardContent>
-        </Card>
+            <div className="flex flex-col gap-2.5">
+              {format.powerLevels.map((pl) => (
+                <button
+                  key={pl.level}
+                  type="button"
+                  onClick={() => {
+                    setPowerLevel(String(pl.level));
+                    advance("power_level");
+                  }}
+                  className="flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all hover:shadow-sm cursor-pointer"
+                  style={{
+                    borderColor: powerLevel === String(pl.level) ? pl.color : "var(--border)",
+                    background: powerLevel === String(pl.level) ? `${pl.color}08` : "var(--card)",
+                  }}
+                >
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                    style={{ backgroundColor: pl.color }}
+                  >
+                    {pl.level}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">{pl.name}</div>
+                    <div className="text-xs text-muted-foreground">{pl.description}</div>
+                  </div>
+                  {powerLevel === String(pl.level) && (
+                    <Check className="h-4 w-4 shrink-0" style={{ color: pl.color }} />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MapPin className="h-4 w-4 text-primary" />
-              Wo trefft ihr euch?
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Adresse oder Ort suchen — PLZ wird automatisch ermittelt
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Address search */}
-            <div className="space-y-2">
-              <Label>Adresse / Ort suchen</Label>
+        {/* ── Step: Players ─────────────────────────────────────── */}
+        {step === "players" && format && (
+          <div className="space-y-8">
+            <StepHeading
+              title="Wie viele Spieler?"
+              sub="Du als Host zählst bereits als Spieler 1"
+            />
+            <div className="flex items-center justify-center gap-8 py-4">
+              <button
+                type="button"
+                onClick={() => setMaxPlayers((p) => Math.max(format.playerCount.min, p - 1))}
+                disabled={maxPlayers <= format.playerCount.min}
+                className={cn(
+                  "flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-2 transition-all",
+                  maxPlayers <= format.playerCount.min
+                    ? "border-border text-muted-foreground opacity-40"
+                    : "border-border hover:border-primary hover:text-primary"
+                )}
+              >
+                <Minus className="h-5 w-5" />
+              </button>
+              <div className="text-center">
+                <div className="font-heading text-7xl font-semibold leading-none text-primary">
+                  {maxPlayers}
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">Spieler max.</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMaxPlayers((p) => Math.min(format.playerCount.max, p + 1))}
+                disabled={maxPlayers >= format.playerCount.max}
+                className={cn(
+                  "flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-2 transition-all",
+                  maxPlayers >= format.playerCount.max
+                    ? "border-border text-muted-foreground opacity-40"
+                    : "border-border hover:border-primary hover:text-primary"
+                )}
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
+            <Button
+              type="button"
+              className="w-full rounded-2xl"
+              size="lg"
+              onClick={() => advance("players")}
+            >
+              Weiter
+            </Button>
+          </div>
+        )}
+
+        {/* ── Step: Title ───────────────────────────────────────── */}
+        {step === "title" && (
+          <div className="space-y-5">
+            <StepHeading
+              title="Wie heißt deine Runde?"
+              sub="Ein guter Titel hilft anderen, dich zu finden"
+            />
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={
+                tcgId === "magic" && formatId === "commander"
+                  ? "z.B. Casual Commander Runde am Abend"
+                  : tcgId === "pokemon"
+                  ? "z.B. Pokémon Standard Training"
+                  : "z.B. Entspannte Runde nach Feierabend"
+              }
+              className="h-14 rounded-2xl text-base"
+              maxLength={100}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && title.trim().length >= 3) advance("title");
+              }}
+            />
+            <Button
+              type="button"
+              className="w-full rounded-2xl"
+              size="lg"
+              disabled={title.trim().length < 3}
+              onClick={() => advance("title")}
+            >
+              Weiter
+            </Button>
+          </div>
+        )}
+
+        {/* ── Step: Description ─────────────────────────────────── */}
+        {step === "description" && (
+          <div className="space-y-5">
+            <StepHeading
+              title="Kurze Beschreibung?"
+              sub="Optional — z.B. Hausregeln, ob Proxys ok sind, Snacks..."
+            />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Erzähl etwas über die Runde..."
+              className="min-h-[140px] resize-none rounded-2xl text-base"
+              maxLength={500}
+              autoFocus
+            />
+            <div className="flex gap-2.5">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 rounded-2xl"
+                onClick={() => { setDescription(""); advance("description"); }}
+              >
+                Überspringen
+              </Button>
+              <Button
+                type="button"
+                className="flex-1 rounded-2xl"
+                onClick={() => advance("description")}
+              >
+                Weiter
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step: DateTime ────────────────────────────────────── */}
+        {step === "datetime" && (
+          <div className="space-y-5">
+            <StepHeading
+              title="Wann geht's los?"
+              sub="Datum und Uhrzeit der Session"
+            />
+            <Input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="h-14 rounded-2xl text-base"
+              min={new Date().toISOString().slice(0, 16)}
+              autoFocus
+            />
+            <Button
+              type="button"
+              className="w-full rounded-2xl"
+              size="lg"
+              disabled={!scheduledAt}
+              onClick={() => advance("datetime")}
+            >
+              Weiter
+            </Button>
+          </div>
+        )}
+
+        {/* ── Step: Location ────────────────────────────────────── */}
+        {step === "location" && (
+          <div className="space-y-5">
+            <StepHeading
+              title="Wo trefft ihr euch?"
+              sub="Stadt, PLZ oder Adresse eingeben"
+            />
+
+            {!locationLabel ? (
               <div className="relative">
                 <Input
                   value={locationQuery}
                   onChange={(e) => setLocationQuery(e.target.value)}
                   placeholder="z.B. Alexanderplatz Berlin oder 10178..."
-                  className="text-base"
+                  className="h-14 rounded-2xl text-base"
                   autoComplete="off"
+                  autoFocus
                 />
                 {showResults && locationResults.length > 0 && (
-                  <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-card shadow-lg">
+                  <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border-2 border-border bg-card shadow-lg">
                     {locationResults.map((r) => (
                       <button
                         key={r.place_id}
                         type="button"
-                        className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-sm hover:bg-muted/60 first:rounded-t-xl last:rounded-b-xl"
+                        className="flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-muted/60"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => selectLocation(r)}
                       >
-                        <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
-                        <span className="line-clamp-2 text-xs">{r.display_name}</span>
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span className="line-clamp-2 text-sm">{r.display_name}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Resolved location display */}
-            {locationLabel && (
-              <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm">
-                <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
-                <div className="flex-1 min-w-0">
-                  <p className="truncate font-medium">{locationLabel}</p>
+            ) : (
+              <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
+                <MapPin className="h-5 w-5 shrink-0 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{locationLabel}</p>
                   {resolvedPostalCode && (
                     <p className="text-xs text-muted-foreground">
-                      PLZ: {resolvedPostalCode} · {resolvedCity}
+                      PLZ {resolvedPostalCode} · {resolvedCity}
                     </p>
                   )}
                 </div>
                 <button
                   type="button"
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => {
                     setLocationLabel("");
                     setResolvedCity("");
@@ -518,45 +492,39 @@ export function CreateSessionForm() {
               </div>
             )}
 
-            <Separator />
-
-            <div className="space-y-2">
-              <Label htmlFor="location_name" className="flex items-center gap-1">
-                Treffpunkt
-                <span className="text-muted-foreground font-normal">(optional)</span>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Genauer Treffpunkt{" "}
+                <span className="font-normal">(optional)</span>
               </Label>
               <Input
-                id="location_name"
-                name="location_name"
+                value={locationName}
+                onChange={(e) => setLocationName(e.target.value)}
                 placeholder="z.B. Café XY, Spieleladen, bei mir zu Hause..."
+                className="rounded-2xl"
               />
               <p className="text-xs text-muted-foreground">
-                Tipp: Viele Gruppen klären den genauen Ort erst im Session-Chat.
+                Tipp: Viele Gruppen klären den genauen Ort im Session-Chat.
               </p>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Hidden fields */}
-        <input type="hidden" name="lat" value={resolvedLat} />
-        <input type="hidden" name="lng" value={resolvedLng} />
-        <input type="hidden" name="city" value={resolvedCity || "Berlin"} />
-        <input type="hidden" name="postal_code" value={resolvedPostalCode} />
-
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setStep(2)}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Zurueck
-          </Button>
-          <Button type="submit" className="flex-1" size="lg">
-            Session erstellen
-          </Button>
-        </div>
+            <Button type="submit" className="w-full rounded-2xl" size="lg">
+              Session erstellen 🎴
+            </Button>
+          </div>
+        )}
       </div>
     </form>
+  );
+}
+
+function StepHeading({ title, sub }: { title: string; sub: string }) {
+  return (
+    <div>
+      <h2 className="font-heading text-2xl font-semibold tracking-[-0.02em] mb-1">
+        {title}
+      </h2>
+      <p className="text-sm text-muted-foreground">{sub}</p>
+    </div>
   );
 }
