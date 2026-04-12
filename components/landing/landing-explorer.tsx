@@ -21,7 +21,17 @@ const SessionMap = dynamic(
   }
 );
 
-export function LandingExplorer({ sessions, locationBar }: { sessions: MapSession[]; locationBar?: React.ReactNode }) {
+export function LandingExplorer({
+  sessions,
+  locationBar,
+  center,
+  radius,
+}: {
+  sessions: MapSession[];
+  locationBar?: React.ReactNode;
+  center?: { lat: number; lng: number };
+  radius?: number;
+}) {
   const { selectedSessionId, activeTcg, setSelected, setHovered, setTcgFilter } =
     useExplorerStore();
   const listRef = useRef<HTMLDivElement>(null);
@@ -99,7 +109,7 @@ export function LandingExplorer({ sessions, locationBar }: { sessions: MapSessio
         className="overflow-hidden rounded-2xl border-2 border-border"
         style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
       >
-        <SessionMap sessions={filtered} />
+        <SessionMap sessions={filtered} center={center} radius={radius} />
       </div>
     </div>
   );

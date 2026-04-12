@@ -70,7 +70,24 @@ function sessionsToGeoJSON(sessions: MapSession[]): GeoJSON.FeatureCollection {
   };
 }
 
-export function SessionMap({ sessions }: { sessions: MapSession[] }) {
+function boundsFromRadius(lat: number, lng: number, radiusKm: number) {
+  const latDelta = radiusKm / 111;
+  const lngDelta = radiusKm / (111 * Math.cos((lat * Math.PI) / 180));
+  return new maplibregl.LngLatBounds(
+    [lng - lngDelta, lat - latDelta],
+    [lng + lngDelta, lat + latDelta]
+  );
+}
+
+export function SessionMap({
+  sessions,
+  center,
+  radius,
+}: {
+  sessions: MapSession[];
+  center?: { lat: number; lng: number };
+  radius?: number;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
@@ -117,10 +134,6 @@ export function SessionMap({ sessions }: { sessions: MapSession[] }) {
       },
       center: [13.405, 52.52],
       zoom: 9,
-      maxBounds: [
-        [11.5, 51.2],
-        [15.3, 53.8],
-      ],
       attributionControl: false,
     });
 
@@ -201,6 +214,19 @@ export function SessionMap({ sessions }: { sessions: MapSession[] }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fit map to center + radius when location changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !center) return;
+    const bounds = boundsFromRadius(center.lat, center.lng, radius ?? 25);
+    const apply = () => map.fitBounds(bounds, { padding: 40, duration: 800, maxZoom: 14 });
+    if (map.isStyleLoaded()) {
+      apply();
+    } else {
+      map.once("load", apply);
+    }
+  }, [center?.lat, center?.lng, radius]);
 
   // Update GeoJSON when sessions change
   useEffect(() => {

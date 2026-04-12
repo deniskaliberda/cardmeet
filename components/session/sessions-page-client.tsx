@@ -111,6 +111,8 @@ export function SessionsPageClient({
       </div>
       <LandingExplorer
         sessions={sessions}
+        center={{ lat: location.lat, lng: location.lng }}
+        radius={location.radius}
         locationBar={
           <LocationBar
             city={location.city}
