@@ -131,9 +131,9 @@ export function ProfileView({
               {profile.display_name ?? profile.username}
             </h1>
             <div className="flex gap-2.5 flex-wrap mb-3">
-              {profile.avg_rating != null && (
+              {(profile.avg_rating ?? 0) > 0 && (
                 <span className="bg-white/20 rounded-full px-3.5 py-1 text-xs font-semibold text-white">
-                  ⭐ {profile.avg_rating} Rating
+                  👍 {profile.avg_rating} Empfehlungen
                 </span>
               )}
               <span className="bg-white/20 rounded-full px-3.5 py-1 text-xs font-semibold text-white">
@@ -225,13 +225,13 @@ function OverviewTab({
         </div>
         <div className="rounded-xl bg-[var(--surface-container-low)] p-5 text-center">
           <div className="text-xs text-muted-foreground font-semibold uppercase mb-2 tracking-wide">
-            Ø Rating
+            Empfohlen
           </div>
           <div className="font-heading text-3xl font-medium text-[var(--secondary)]">
-            {profile.avg_rating ?? "–"}
+            {profile.avg_rating ?? 0}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            {profile.review_count ?? 0} Bewertungen
+            👍 Empfehlungen
           </div>
         </div>
         <div className="rounded-xl bg-[var(--surface-container-low)] p-5 text-center">

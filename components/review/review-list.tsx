@@ -1,16 +1,18 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Star } from "lucide-react";
+import { ThumbsUp } from "lucide-react";
 
 type Review = {
   id: string;
-  rating: number;
-  comment: string | null;
+  recommended: boolean;
+  tags: string[];
   created_at: string;
   profiles: { username: string; avatar_url: string | null } | null;
 };
 
 export function ReviewList({ reviews }: { reviews: Review[] }) {
-  if (reviews.length === 0) {
+  const positive = reviews.filter((r) => r.recommended);
+
+  if (positive.length === 0) {
     return (
       <p className="text-xs text-muted-foreground py-4 text-center">
         Noch keine Bewertungen
@@ -20,7 +22,7 @@ export function ReviewList({ reviews }: { reviews: Review[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {reviews.map((review) => (
+      {positive.map((review) => (
         <div
           key={review.id}
           className="rounded-xl bg-[var(--surface-container-low)] p-4"
@@ -41,23 +43,23 @@ export function ReviewList({ reviews }: { reviews: Review[] }) {
                 </div>
               </div>
             </div>
-            <div className="flex gap-0.5">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`h-3.5 w-3.5 ${
-                    star <= review.rating
-                      ? "fill-amber-400 text-amber-400"
-                      : "text-muted-foreground/20"
-                  }`}
-                />
-              ))}
+            <div className="flex items-center gap-1 text-[#006b5c]">
+              <ThumbsUp className="h-3.5 w-3.5 fill-current" />
+              <span className="text-xs font-semibold">Empfohlen</span>
             </div>
           </div>
-          {review.comment && (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {review.comment}
-            </p>
+
+          {review.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {review.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-[#006b5c]/30 bg-[#006b5c]/8 px-2.5 py-0.5 text-[11px] font-medium text-[#006b5c]"
+                >
+                  ✓ {tag}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       ))}

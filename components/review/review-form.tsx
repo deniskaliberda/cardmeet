@@ -1,12 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Star } from "lucide-react";
+import { ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { submitReview } from "@/app/(app)/reviews/actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+const TAGS = [
+  "Pünktlich",
+  "Fairer Spielstil",
+  "Kommunikativ",
+  "Angenehme Atmosphäre",
+  "Gerne wieder",
+];
 
 export function ReviewForm({
   sessionId,
@@ -17,31 +24,25 @@ export function ReviewForm({
   revieweeId: string;
   revieweeName: string;
 }) {
-  const [rating, setRating] = useState(0);
-  const [hoveredRating, setHoveredRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [thumbsUp, setThumbsUp] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
-  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  function toggleTag(tag: string) {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }
 
   function handleSubmit() {
-    if (rating === 0) {
-      toast.error("Bitte waehle eine Bewertung");
-      return;
-    }
     startTransition(async () => {
-      const result = await submitReview(
-        sessionId,
-        revieweeId,
-        rating,
-        comment || null
-      );
+      const result = await submitReview(sessionId, revieweeId, selectedTags);
       if (result && "error" in result) {
         toast.error(result.error);
       } else {
-        toast.success(`Bewertung fuer ${revieweeName} abgeschickt`);
+        toast.success(`Bewertung für ${revieweeName} abgeschickt`);
         setSubmitted(true);
-        router.refresh();
       }
     });
   }
@@ -50,56 +51,74 @@ export function ReviewForm({
     return (
       <div className="rounded-[10px] bg-[#006b5c]/10 border-2 border-[#006b5c] p-3 text-center">
         <div className="text-xs font-medium text-[#006b5c]">
-          ✓ Bewertung abgeschickt
+          👍 Bewertung abgeschickt
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-[10px] bg-amber-500/10 border-2 border-amber-500 p-3.5 flex flex-col gap-2.5">
-      <div className="text-xs font-medium">⭐ {revieweeName} bewerten</div>
-
-      {/* Star selector */}
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => setRating(star)}
-            onMouseEnter={() => setHoveredRating(star)}
-            onMouseLeave={() => setHoveredRating(0)}
-            className="cursor-pointer p-0.5 transition-transform hover:scale-110"
-          >
-            <Star
-              className={cn(
-                "h-5 w-5 transition-colors",
-                (hoveredRating || rating) >= star
-                  ? "fill-amber-400 text-amber-400"
-                  : "text-muted-foreground/30"
-              )}
-            />
-          </button>
-        ))}
+    <div className="rounded-[10px] bg-[var(--surface-container-low)] border-2 border-border p-3.5 flex flex-col gap-3">
+      <div className="text-xs font-medium text-muted-foreground">
+        {revieweeName} bewerten
       </div>
 
-      {/* Comment */}
-      <textarea
-        placeholder="Kommentar (optional)"
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        maxLength={500}
-        className="w-full rounded-[10px] bg-[var(--surface-container-low)] p-2.5 text-xs text-foreground placeholder:text-muted-foreground resize-none min-h-[60px] focus:outline-none focus:ring-2 focus:ring-primary/40"
-      />
+      {/* Thumbs up / Skip */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setThumbsUp(true)}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-xs font-semibold transition-all cursor-pointer",
+            thumbsUp
+              ? "border-[#006b5c] bg-[#006b5c]/10 text-[#006b5c]"
+              : "border-border bg-card text-muted-foreground hover:border-[#006b5c]/50 hover:text-[#006b5c]"
+          )}
+        >
+          <ThumbsUp className={cn("h-4 w-4", thumbsUp && "fill-current")} />
+          Empfehle ich
+        </button>
+        <button
+          type="button"
+          onClick={() => setSubmitted(true)}
+          className="flex items-center justify-center rounded-xl border-2 border-border bg-card px-4 text-xs text-muted-foreground hover:bg-[var(--surface-container)] transition-colors cursor-pointer"
+        >
+          Überspringen
+        </button>
+      </div>
 
-      <Button
-        size="sm"
-        className="rounded-xl text-xs"
-        onClick={handleSubmit}
-        disabled={pending || rating === 0}
-      >
-        {pending ? "Wird gesendet..." : "Bewertung abschicken"}
-      </Button>
+      {/* Tags — only shown after thumbs up */}
+      {thumbsUp && (
+        <>
+          <div className="flex flex-wrap gap-1.5">
+            {TAGS.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all cursor-pointer",
+                  selectedTags.includes(tag)
+                    ? "border-[#006b5c] bg-[#006b5c]/10 text-[#006b5c]"
+                    : "border-border text-muted-foreground hover:border-[#006b5c]/50"
+                )}
+              >
+                {selectedTags.includes(tag) ? "✓ " : ""}
+                {tag}
+              </button>
+            ))}
+          </div>
+
+          <Button
+            size="sm"
+            className="rounded-xl text-xs bg-[#006b5c] hover:bg-[#005a4e]"
+            onClick={handleSubmit}
+            disabled={pending}
+          >
+            {pending ? "Wird gesendet..." : "Bewertung abschicken"}
+          </Button>
+        </>
+      )}
     </div>
   );
 }
