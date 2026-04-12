@@ -19,7 +19,13 @@ type Profile = {
   preferred_tcgs: string[] | null;
 };
 
-export function ProfileForm({ profile }: { profile: Profile }) {
+export function ProfileForm({
+  profile,
+  onSaved,
+}: {
+  profile: Profile;
+  onSaved?: () => void;
+}) {
   const [selectedTcgs, setSelectedTcgs] = useState<string[]>(
     profile.preferred_tcgs ?? []
   );
@@ -42,7 +48,12 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       toast.error(result.error);
     } else {
       toast.success("Profil aktualisiert");
-      router.push("/profile");
+      if (onSaved) {
+        router.refresh();
+        onSaved();
+      } else {
+        router.push("/profile");
+      }
     }
   }
 
