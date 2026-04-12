@@ -312,7 +312,12 @@ function SettingsTab({
 
         {editingProfile ? (
           <ProfileForm
-            profile={profile}
+            profile={{
+              display_name: profile.display_name ?? null,
+              bio: profile.bio ?? null,
+              city: profile.city ?? null,
+              preferred_tcgs: profile.preferred_tcgs ?? null,
+            }}
             onSaved={() => setEditingProfile(false)}
           />
         ) : (
