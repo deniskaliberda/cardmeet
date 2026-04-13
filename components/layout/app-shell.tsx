@@ -21,8 +21,8 @@ type AppUser = {
 };
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "🏠 Home" },
   { href: "/sessions", label: "🎴 Sessions" },
+  { href: "/my-sessions", label: "📋 Meine Sessions" },
   { href: "/sessions/create", label: "➕ Erstellen" },
   { href: "/profile", label: "👤 Profil" },
 ] as const;
