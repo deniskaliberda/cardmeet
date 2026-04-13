@@ -252,38 +252,47 @@ export function SessionMap({
         scheduleHoverClose();
       });
 
-      // Inject popup styles into map container once
-      const style = document.createElement("style");
-      style.textContent = `
-        .cm-hover-popup .maplibregl-popup-content {
-          padding: 0;
-          border-radius: 14px;
-          border: 1px solid rgba(0,0,0,0.08);
-          box-shadow: 0 4px 20px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.06);
-          overflow: hidden;
-          background: #ffffff;
-        }
-        .cm-hover-popup .maplibregl-popup-tip { display: none; }
-        .cm-selected-popup .maplibregl-popup-content {
-          padding: 0;
-          border-radius: 14px;
-          border: 1px solid rgba(0,0,0,0.08);
-          box-shadow: 0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08);
-          overflow: hidden;
-          background: #ffffff;
-        }
-        .cm-selected-popup .maplibregl-popup-tip {
-          border-top-color: #ffffff;
-        }
-        .cm-selected-popup .maplibregl-popup-close-button {
-          font-size: 18px;
-          color: #6b7280;
-          padding: 6px 10px;
-          line-height: 1;
-        }
-        .cm-selected-popup .maplibregl-popup-close-button:hover { color: #111; background: rgba(0,0,0,0.04); }
-      `;
-      containerRef.current?.appendChild(style);
+      // Inject popup styles into <head> so they apply globally
+      if (!document.getElementById("cm-popup-styles")) {
+        const style = document.createElement("style");
+        style.id = "cm-popup-styles";
+        style.textContent = `
+          .cm-hover-popup .maplibregl-popup-content {
+            padding: 0 !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(0,0,0,0.08) !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.06) !important;
+            overflow: hidden !important;
+            background: var(--card, #ffffff) !important;
+          }
+          .cm-hover-popup .maplibregl-popup-tip { display: none !important; }
+          .cm-selected-popup .maplibregl-popup-content {
+            padding: 0 !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(0,0,0,0.08) !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08) !important;
+            overflow: hidden !important;
+            background: var(--card, #ffffff) !important;
+          }
+          .cm-selected-popup .maplibregl-popup-tip {
+            border-top-color: var(--card, #ffffff) !important;
+          }
+          .cm-selected-popup .maplibregl-popup-close-button {
+            font-size: 18px !important;
+            color: #6b7280 !important;
+            padding: 6px 10px !important;
+            line-height: 1 !important;
+            top: 2px !important;
+            right: 2px !important;
+          }
+          .cm-selected-popup .maplibregl-popup-close-button:hover {
+            color: #111 !important;
+            background: rgba(0,0,0,0.04) !important;
+            border-radius: 8px !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
 
       // Fit bounds to sessions if there are any
       if (geojson.features.length > 0) {
