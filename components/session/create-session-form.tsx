@@ -338,50 +338,61 @@ export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
             </div>
 
             {/* Friend invite */}
-            {friends.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Freunde einladen</span>
-                  <span className="text-xs text-muted-foreground">(optional)</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {friends.map((friend) => {
-                    const invited = invitedFriendIds.includes(friend.user_id);
-                    return (
-                      <button
-                        key={friend.user_id}
-                        type="button"
-                        onClick={() =>
-                          setInvitedFriendIds((prev) =>
-                            invited
-                              ? prev.filter((id) => id !== friend.user_id)
-                              : [...prev, friend.user_id]
-                          )
-                        }
-                        className={cn(
-                          "flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-sm font-medium transition-all cursor-pointer",
-                          invited
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border bg-card text-foreground hover:border-primary/50"
-                        )}
-                      >
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
-                          {friend.username.slice(0, 2).toUpperCase()}
-                        </span>
-                        {friend.username}
-                        {invited && <Check className="h-3.5 w-3.5" />}
-                      </button>
-                    );
-                  })}
-                </div>
-                {invitedFriendIds.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {invitedFriendIds.length} Freund{invitedFriendIds.length > 1 ? "e" : ""} wird nach dem Erstellen benachrichtigt
-                  </p>
-                )}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Freunde einladen</span>
+                <span className="text-xs text-muted-foreground">(optional)</span>
               </div>
-            )}
+              {friends.length === 0 ? (
+                <div className="rounded-xl border-2 border-dashed border-border px-4 py-3 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Du hast noch keine Freunde.{" "}
+                    <a href="/friends" className="text-primary underline-offset-2 hover:underline">
+                      Jetzt Freunde hinzufügen →
+                    </a>
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    {friends.map((friend) => {
+                      const invited = invitedFriendIds.includes(friend.user_id);
+                      return (
+                        <button
+                          key={friend.user_id}
+                          type="button"
+                          onClick={() =>
+                            setInvitedFriendIds((prev) =>
+                              invited
+                                ? prev.filter((id) => id !== friend.user_id)
+                                : [...prev, friend.user_id]
+                            )
+                          }
+                          className={cn(
+                            "flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-sm font-medium transition-all cursor-pointer",
+                            invited
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-card text-foreground hover:border-primary/50"
+                          )}
+                        >
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
+                            {friend.username.slice(0, 2).toUpperCase()}
+                          </span>
+                          {friend.username}
+                          {invited && <Check className="h-3.5 w-3.5" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {invitedFriendIds.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {invitedFriendIds.length} Freund{invitedFriendIds.length > 1 ? "e" : ""} wird nach dem Erstellen benachrichtigt
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
 
             <Button
               type="button"
