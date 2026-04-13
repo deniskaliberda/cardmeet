@@ -4,9 +4,10 @@ import React, { useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, CalendarDays, MapPin, Users } from "lucide-react";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { useExplorerStore } from "@/lib/stores/explorer-store";
+import type { DateFilter, TimeFilter } from "@/lib/stores/explorer-store";
 import type { MapSession } from "@/components/map/session-map";
 
 const SessionMap = dynamic(
@@ -21,6 +22,79 @@ const SessionMap = dynamic(
   }
 );
 
+// ── Date / Time helpers ──────────────────────────────────────────────────────
+
+function dayStart(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function addDays(d: Date, n: number) {
+  return new Date(d.getTime() + n * 86_400_000);
+}
+
+function getDateRange(filter: DateFilter): { from: Date; to: Date } | null {
+  if (filter === "all") return null;
+  const today = dayStart(new Date());
+  switch (filter) {
+    case "today":
+      return { from: today, to: addDays(today, 1) };
+    case "tomorrow": {
+      const t = addDays(today, 1);
+      return { from: t, to: addDays(t, 1) };
+    }
+    case "weekend": {
+      // next Saturday (or today if it IS Saturday)
+      const dow = today.getDay(); // 0=Sun,6=Sat
+      const daysToSat = dow === 6 ? 0 : (6 - dow + 7) % 7 || 7;
+      const sat = addDays(today, daysToSat);
+      return { from: sat, to: addDays(sat, 2) }; // Sat + Sun
+    }
+    case "week":
+      return { from: today, to: addDays(today, 7) };
+    default: {
+      // specific "YYYY-MM-DD"
+      const [y, m, d] = filter.split("-").map(Number);
+      const start = new Date(y, m - 1, d);
+      return { from: start, to: addDays(start, 1) };
+    }
+  }
+}
+
+function matchesDate(session: MapSession, filter: DateFilter): boolean {
+  const range = getDateRange(filter);
+  if (!range) return true;
+  const d = new Date(session.scheduled_at);
+  return d >= range.from && d < range.to;
+}
+
+function matchesTime(session: MapSession, filter: TimeFilter): boolean {
+  if (filter === "any") return true;
+  const h = new Date(session.scheduled_at).getHours();
+  if (filter === "morning") return h >= 6 && h < 12;
+  if (filter === "afternoon") return h >= 12 && h < 18;
+  if (filter === "evening") return h >= 18;
+  return true;
+}
+
+// ── Label helpers ─────────────────────────────────────────────────────────────
+
+const DATE_OPTIONS: { id: DateFilter; label: string }[] = [
+  { id: "all", label: "Alle" },
+  { id: "today", label: "Heute" },
+  { id: "tomorrow", label: "Morgen" },
+  { id: "weekend", label: "Wochenende" },
+  { id: "week", label: "Diese Woche" },
+];
+
+const TIME_OPTIONS: { id: TimeFilter; label: string }[] = [
+  { id: "any", label: "Jederzeit" },
+  { id: "morning", label: "Morgens" },
+  { id: "afternoon", label: "Nachmittags" },
+  { id: "evening", label: "Abends" },
+];
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export function LandingExplorer({
   sessions,
   locationBar,
@@ -32,13 +106,25 @@ export function LandingExplorer({
   center?: { lat: number; lng: number };
   radius?: number;
 }) {
-  const { selectedSessionId, activeTcg, setSelected, setHovered, setTcgFilter } =
-    useExplorerStore();
-  const listRef = useRef<HTMLDivElement>(null);
+  const {
+    selectedSessionId,
+    activeTcg,
+    dateFilter,
+    timeFilter,
+    setSelected,
+    setHovered,
+    setTcgFilter,
+    setDateFilter,
+    setTimeFilter,
+  } = useExplorerStore();
 
-  const filtered = activeTcg
-    ? sessions.filter((s) => s.tcg === activeTcg)
-    : sessions;
+  const listRef = useRef<HTMLDivElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = sessions
+    .filter((s) => !activeTcg || s.tcg === activeTcg)
+    .filter((s) => matchesDate(s, dateFilter))
+    .filter((s) => matchesTime(s, timeFilter));
 
   useEffect(() => {
     if (!selectedSessionId || !listRef.current) return;
@@ -47,6 +133,23 @@ export function LandingExplorer({
     );
     card?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [selectedSessionId]);
+
+  // Label for a specific-date filter chip
+  const isSpecificDate =
+    dateFilter !== "all" &&
+    !["today", "tomorrow", "weekend", "week"].includes(dateFilter);
+  const specificDateLabel = isSpecificDate
+    ? (() => {
+        const [y, m, d] = dateFilter.split("-").map(Number);
+        return format(new Date(y, m - 1, d), "d. MMM", { locale: de });
+      })()
+    : null;
+
+  function handleDateInput(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.value) {
+      setDateFilter(e.target.value);
+    }
+  }
 
   return (
     <div className="grid grid-cols-[3fr_7fr] gap-5" style={{ height: "560px" }}>
@@ -57,10 +160,77 @@ export function LandingExplorer({
         {/* Location bar slot */}
         {locationBar}
 
+        {/* ── Date filter ── */}
+        <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+          {DATE_OPTIONS.map((opt) => (
+            <FilterPill
+              key={opt.id}
+              label={opt.label}
+              active={dateFilter === opt.id}
+              onClick={() => setDateFilter(opt.id)}
+            />
+          ))}
+          {/* Specific date picker */}
+          <div className="relative">
+            <button
+              type="button"
+              title="Datum wählen"
+              onClick={() => dateInputRef.current?.showPicker?.()}
+              className="flex h-[26px] w-[26px] items-center justify-center rounded-full border-2 transition-all"
+              style={
+                specificDateLabel
+                  ? {
+                      background: "rgba(0,102,255,0.13)",
+                      borderColor: "var(--primary)",
+                      color: "var(--primary)",
+                    }
+                  : {
+                      background: "transparent",
+                      borderColor: "var(--border)",
+                      color: "var(--muted-foreground)",
+                    }
+              }
+            >
+              <CalendarDays className="h-3 w-3" />
+            </button>
+            <input
+              ref={dateInputRef}
+              type="date"
+              className="absolute opacity-0 pointer-events-none w-0 h-0"
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={handleDateInput}
+            />
+          </div>
+          {/* Show specific date chip if selected */}
+          {specificDateLabel && (
+            <FilterPill
+              label={specificDateLabel}
+              active
+              onClick={() => setDateFilter("all")}
+              closeable
+            />
+          )}
+        </div>
+
+        {/* ── Time filter ── */}
+        <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+          {TIME_OPTIONS.map((opt) => (
+            <FilterPill
+              key={opt.id}
+              label={opt.label}
+              active={timeFilter === opt.id}
+              onClick={() => setTimeFilter(opt.id)}
+              small
+            />
+          ))}
+        </div>
+
         {/* TCG Filter pills */}
         <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
           <FilterPill label="Alle" active={!activeTcg} onClick={() => setTcgFilter(null)} />
-          {TCG_LIST.filter((tcg) => ["magic", "pokemon", "yugioh", "onepiece"].includes(tcg.id)).map((tcg) => (
+          {TCG_LIST.filter((tcg) =>
+            ["magic", "pokemon", "yugioh", "onepiece"].includes(tcg.id)
+          ).map((tcg) => (
             <FilterPill
               key={tcg.id}
               label={tcg.shortName}
@@ -79,10 +249,10 @@ export function LandingExplorer({
         {/* Session list */}
         <div ref={listRef} className="sessions-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="font-medium">Keine Sessions gefunden</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Erstelle die erste Session!
+                Andere Filter versuchen oder Session erstellen!
               </p>
             </div>
           ) : (
@@ -104,7 +274,7 @@ export function LandingExplorer({
         </div>
       </div>
 
-      {/* Right: Map – starts at the very top, full height */}
+      {/* Right: Map */}
       <div
         className="overflow-hidden rounded-2xl border-2 border-border"
         style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
@@ -115,32 +285,47 @@ export function LandingExplorer({
   );
 }
 
+// ── FilterPill ────────────────────────────────────────────────────────────────
+
 function FilterPill({
   label,
   active,
   color,
   onClick,
+  small,
+  closeable,
 }: {
   label: string;
   active: boolean;
   color?: string;
   onClick: () => void;
+  small?: boolean;
+  closeable?: boolean;
 }) {
   const activeColor = color ?? "#0066FF";
   return (
     <button
       onClick={onClick}
-      className="rounded-full border-2 px-3.5 py-1 text-xs font-semibold transition-all"
-      style={
-        active
+      className="flex items-center gap-1 rounded-full border-2 font-semibold transition-all"
+      style={{
+        fontSize: small ? "10px" : "11px",
+        padding: small ? "2px 10px" : "3px 12px",
+        ...(active
           ? { background: `${activeColor}22`, borderColor: activeColor, color: activeColor }
-          : { background: "transparent", borderColor: "var(--border)", color: "var(--muted-foreground)" }
-      }
+          : {
+              background: "transparent",
+              borderColor: "var(--border)",
+              color: "var(--muted-foreground)",
+            }),
+      }}
     >
       {label}
+      {closeable && <span className="ml-0.5 text-[10px] opacity-70">✕</span>}
     </button>
   );
 }
+
+// ── ExplorerSessionCard ───────────────────────────────────────────────────────
 
 function ExplorerSessionCard({
   session,
