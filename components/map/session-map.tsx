@@ -91,11 +91,19 @@ export function SessionMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
+  const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
+  const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoveredIndexRef = useRef<number | null>(null);
+  // Refs so map event handlers always see fresh values without re-registering
+  const sessionsRef = useRef(sessions);
+  const selectedIdRef = useRef<string | null>(null);
 
   const selectedSessionId = useExplorerStore((s) => s.selectedSessionId);
   const hoveredSessionId = useExplorerStore((s) => s.hoveredSessionId);
   const setSelected = useExplorerStore((s) => s.setSelected);
+
+  useEffect(() => { sessionsRef.current = sessions; }, [sessions]);
+  useEffect(() => { selectedIdRef.current = selectedSessionId; }, [selectedSessionId]);
 
   const flyToSession = useCallback(
     (sessionId: string) => {
@@ -229,11 +237,21 @@ export function SessionMap({
         setSelected(id);
       });
 
-      // Hover cursor
-      for (const layer of ["session-circles", "session-inner", "session-glow"]) {
-        map.on("mouseenter", layer, () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = ""; });
-      }
+      // Hover cursor + hover popup
+      map.on("mouseenter", "session-circles", (e) => {
+        map.getCanvas().style.cursor = "pointer";
+        const feature = e.features?.[0];
+        if (!feature?.properties) return;
+        const sessionId = feature.properties.id as string;
+        // Don't show hover popup if this session is already selected
+        if (selectedIdRef.current === sessionId) return;
+        if (hoverCloseTimerRef.current) clearTimeout(hoverCloseTimerRef.current);
+        showHoverPopup(sessionId, e.lngLat);
+      });
+      map.on("mouseleave", "session-circles", () => {
+        map.getCanvas().style.cursor = "";
+        scheduleHoverClose();
+      });
 
       // Fit bounds to sessions if there are any
       if (geojson.features.length > 0) {
@@ -340,9 +358,87 @@ export function SessionMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSessionId, sessions]);
 
+  function scheduleHoverClose() {
+    hoverCloseTimerRef.current = setTimeout(() => {
+      hoverPopupRef.current?.remove();
+      hoverPopupRef.current = null;
+    }, 180);
+  }
+
+  function showHoverPopup(sessionId: string, lngLat: maplibregl.LngLat) {
+    const map = mapRef.current;
+    if (!map) return;
+    hoverPopupRef.current?.remove();
+
+    const session = sessionsRef.current.find((s) => s.id === sessionId);
+    if (!session?.lat || !session?.lng) return;
+
+    const tcg = getTCG(session.tcg);
+    const color = getTcgColor(session.tcg);
+    const dateStr = format(new Date(session.scheduled_at), "EEE, d. MMM · HH:mm", { locale: de });
+    const free = session.max_players - session.current_players;
+    const isFull = free <= 0;
+
+    const html = `
+      <a href="/sessions/${session.id}" style="
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        font-family: system-ui, -apple-system, sans-serif;
+        min-width: 200px;
+        font-size: 13px;
+        line-height: 1.45;
+        cursor: pointer;
+      ">
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:7px;">
+          <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:${color}; flex-shrink:0;"></span>
+          <span style="font-size:11px; color:${color}; font-weight:700; letter-spacing:0.02em;">${tcg?.shortName ?? session.tcg} · ${session.format}</span>
+        </div>
+        <div style="font-weight:650; font-size:14px; margin-bottom:5px; color:#111;">${session.title}</div>
+        <div style="color:#6b7280; font-size:12px; margin-bottom:2px;">${dateStr} Uhr</div>
+        ${session.location_name || session.city ? `<div style="color:#6b7280; font-size:12px; margin-bottom:2px;">📍 ${session.location_name ?? session.city}</div>` : ""}
+        <div style="
+          display:inline-flex; align-items:center; gap:5px;
+          margin-top:8px; padding:3px 10px; border-radius:20px;
+          font-size:11px; font-weight:600;
+          background:${isFull ? "rgba(229,62,62,0.1)" : `${color}15`};
+          color:${isFull ? "#dc2626" : color};
+          border: 1px solid ${isFull ? "rgba(229,62,62,0.25)" : `${color}30`};
+        ">
+          👥 ${isFull ? "Voll" : `${free} von ${session.max_players} frei`}
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:${color}; font-weight:600; opacity:0.8;">Klicken für Details →</div>
+      </a>
+    `;
+
+    const popup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: 16,
+      maxWidth: "250px",
+    })
+      .setLngLat([session.lng, session.lat])
+      .setHTML(html)
+      .addTo(map);
+
+    // Keep popup open while hovering over it
+    const el = popup.getElement();
+    el.addEventListener("mouseenter", () => {
+      if (hoverCloseTimerRef.current) clearTimeout(hoverCloseTimerRef.current);
+    });
+    el.addEventListener("mouseleave", () => scheduleHoverClose());
+
+    hoverPopupRef.current = popup;
+  }
+
   function showPopup(sessionId: string) {
     const map = mapRef.current;
     if (!map) return;
+
+    // Close hover popup before showing the full selected popup
+    if (hoverCloseTimerRef.current) clearTimeout(hoverCloseTimerRef.current);
+    hoverPopupRef.current?.remove();
+    hoverPopupRef.current = null;
 
     popupRef.current?.remove();
 
