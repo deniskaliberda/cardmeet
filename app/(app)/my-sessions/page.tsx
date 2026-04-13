@@ -47,8 +47,10 @@ export default async function MySessionsPage() {
       new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
   );
 
-  const upcoming = allSessions.filter((s) => new Date(s.scheduled_at) > new Date());
-  const past = allSessions.filter((s) => new Date(s.scheduled_at) <= new Date());
+  // Sessions gelten 3h nach Startzeit als vergangen (typische TCG-Rundendauer)
+  const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const upcoming = allSessions.filter((s) => new Date(s.scheduled_at) > cutoff);
+  const past = allSessions.filter((s) => new Date(s.scheduled_at) <= cutoff);
 
   // Friends for invite feature
   const { data: friendships } = await supabase
