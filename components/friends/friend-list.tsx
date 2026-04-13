@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Star, UserMinus, Check, X } from "lucide-react";
+import { Star, UserMinus, Check, X, MessageCircle } from "lucide-react";
 import { acceptFriendRequest, removeFriend } from "@/app/(app)/friends/actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -99,6 +99,13 @@ function FriendCard({ friend }: { friend: Friend }) {
           </div>
         )}
       </div>
+      <button
+        onClick={() => router.push("/?dm=" + friend.user_id)}
+        className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+        title="Nachricht schreiben"
+      >
+        <MessageCircle className="h-4 w-4" />
+      </button>
       <button
         onClick={handleRemove}
         disabled={pending}

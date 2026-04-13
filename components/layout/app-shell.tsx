@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { DmPanel } from "@/components/chat/dm-panel";
 
 type AppUser = {
   id: string;
@@ -100,8 +101,9 @@ export function AppShell({
             })}
           </div>
 
-          {/* Right: bell + avatar + logout */}
+          {/* Right: chat + bell + avatar + logout */}
           <div className="flex items-center gap-2">
+            <DmPanel userId={user.id} />
             <NotificationBell userId={user.id} />
             <DropdownMenu>
               <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-border bg-primary text-xs font-semibold text-white transition-colors hover:border-primary focus:outline-none">
