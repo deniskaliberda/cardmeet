@@ -216,6 +216,7 @@ export function MySessionsView({
             </div>
             <div className="flex-1 min-h-0">
               <SessionChat
+                key={selected.id}
                 sessionId={selected.id}
                 currentUserId={currentUserId}
                 initialMessages={messages}
