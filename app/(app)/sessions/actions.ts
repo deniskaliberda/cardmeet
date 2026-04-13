@@ -11,18 +11,13 @@ export async function joinSession(sessionId: string) {
 
   if (!user) return { error: "Nicht angemeldet" };
 
-  const { error } = await supabase.from("session_participants").insert({
-    session_id: sessionId,
-    user_id: user.id,
-    status: "joined",
-  });
+  // Use upsert so a user who previously left can rejoin
+  const { error } = await supabase.from("session_participants").upsert(
+    { session_id: sessionId, user_id: user.id, status: "joined" },
+    { onConflict: "session_id,user_id" }
+  );
 
-  if (error) {
-    if (error.code === "23505") {
-      return { error: "Du bist bereits in dieser Session" };
-    }
-    return { error: error.message };
-  }
+  if (error) return { error: error.message };
 
   // Notify the host
   const { data: session } = await supabase
