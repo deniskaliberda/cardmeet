@@ -80,6 +80,7 @@ export function MySessionsView({
 }) {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [selectedId, setSelectedId] = useState<string | null>(initialSessionId);
+  const [chatKey, setChatKey] = useState<string>(initialSessionId ?? "");
   const [participants, setParticipants] = useState(initialParticipants);
   const [messages, setMessages] = useState(initialMessages);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -93,8 +94,8 @@ export function MySessionsView({
 
   async function selectSession(id: string) {
     setSelectedId(id);
-    setMessages([]);      // sofort leeren, kein Flash der alten Nachrichten
     setParticipants([]);
+    setMessages([]);
     // Fetch participants + messages client-side
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
@@ -113,6 +114,8 @@ export function MySessionsView({
     ]);
     setParticipants((parts as any) ?? []);
     setMessages((msgs as any) ?? []);
+    // Update key AFTER messages are ready — so SessionChat mounts with correct data
+    setChatKey(id);
   }
 
   return (
@@ -216,7 +219,7 @@ export function MySessionsView({
             </div>
             <div className="flex-1 min-h-0">
               <SessionChat
-                key={selected.id}
+                key={chatKey}
                 sessionId={selected.id}
                 currentUserId={currentUserId}
                 initialMessages={messages}
