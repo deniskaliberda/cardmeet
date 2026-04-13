@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, Clock, MapPin, Users, Star, X } from "lucide-react";
+import { Calendar, Clock, MapPin, Share2, Users, Star, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SessionChat } from "@/components/session/session-chat";
@@ -423,9 +423,22 @@ function SessionDetailColumn({
             </span>
           )}
         </div>
-        <h3 className="font-heading text-xl font-medium tracking-[-0.02em] leading-tight mb-2">
-          {session.title}
-        </h3>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-heading text-xl font-medium tracking-[-0.02em] leading-tight">
+            {session.title}
+          </h3>
+          <button
+            type="button"
+            onClick={() => {
+              const url = `${window.location.origin}/sessions/${session.id}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Link kopiert");
+            }}
+            className="shrink-0 flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+          >
+            <Share2 className="h-3 w-3" /> Teilen
+          </button>
+        </div>
         <div className="flex flex-col gap-1 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5" />

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { MapPin, Users, Calendar, Clock } from "lucide-react";
+import { MapPin, Users, Calendar, Clock, Share2 } from "lucide-react";
 import { getTCG, getPowerLevel } from "@/lib/config/tcg";
 import { joinSession, leaveSession, cancelSession } from "@/app/(app)/sessions/actions";
 import { toast } from "sonner";
@@ -104,6 +104,17 @@ export function SessionDetail({
             </p>
           </div>
           <div className="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                const url = `${window.location.origin}/sessions/${session.id}`;
+                navigator.clipboard.writeText(url);
+                toast.success("Link kopiert");
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+            >
+              <Share2 className="h-3.5 w-3.5" /> Teilen
+            </button>
             <Badge style={{ backgroundColor: tcg?.color, color: "#fff" }}>
               {tcg?.shortName ?? session.tcg}
             </Badge>
