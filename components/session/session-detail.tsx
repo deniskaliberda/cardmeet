@@ -87,7 +87,10 @@ export function SessionDetail({
   async function handleCancel() {
     const result = await cancelSession(session.id);
     if (result.error) toast.error(result.error);
-    else toast.success("Session wurde abgesagt");
+    else {
+      toast.success("Session gelöscht");
+      router.push("/sessions");
+    }
   }
 
   return (

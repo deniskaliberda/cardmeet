@@ -351,8 +351,8 @@ function SessionDetailColumn({
       if (result && "error" in result) {
         toast.error(result.error);
       } else {
-        toast.success("Session abgesagt");
-        router.refresh();
+        toast.success("Session gelöscht");
+        router.push("/my-sessions");
       }
     });
   }

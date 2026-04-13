@@ -175,15 +175,7 @@ export async function cancelSession(sessionId: string) {
     .eq("host_id", user.id)
     .single();
 
-  const { error } = await supabase
-    .from("sessions")
-    .update({ status: "cancelled" })
-    .eq("id", sessionId)
-    .eq("host_id", user.id);
-
-  if (error) return { error: error.message };
-
-  // Notify all participants
+  // Notify participants before deleting (cascade will remove participants)
   if (session) {
     const { data: participants } = await supabase
       .from("session_participants")
@@ -204,7 +196,15 @@ export async function cancelSession(sessionId: string) {
     }
   }
 
-  revalidatePath(`/sessions/${sessionId}`);
+  const { error } = await supabase
+    .from("sessions")
+    .delete()
+    .eq("id", sessionId)
+    .eq("host_id", user.id);
+
+  if (error) return { error: error.message };
+
   revalidatePath("/sessions");
+  revalidatePath("/my-sessions");
   return { success: true };
 }
