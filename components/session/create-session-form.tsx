@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { createSession } from "@/app/(app)/sessions/create/actions";
 import { toast } from "sonner";
-import { Check, ChevronLeft, MapPin, Minus, Plus } from "lucide-react";
+import { Check, ChevronLeft, MapPin, Minus, Plus, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type StepId =
@@ -40,7 +40,13 @@ type NominatimResult = {
   address: { postcode?: string; city?: string; town?: string; village?: string };
 };
 
-export function CreateSessionForm() {
+type Friend = {
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+};
+
+export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
   const [step, setStep] = useState<StepId>("tcg");
   const [tcgId, setTcgId] = useState("");
   const [formatId, setFormatId] = useState("");
@@ -50,6 +56,8 @@ export function CreateSessionForm() {
   const [description, setDescription] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [locationName, setLocationName] = useState("");
+
+  const [invitedFriendIds, setInvitedFriendIds] = useState<string[]>([]);
 
   const [locationQuery, setLocationQuery] = useState("");
   const [locationResults, setLocationResults] = useState<NominatimResult[]>([]);
@@ -127,6 +135,9 @@ export function CreateSessionForm() {
     formData.set("city", resolvedCity || "Berlin");
     formData.set("postal_code", resolvedPostalCode);
     formData.set("location_name", locationName);
+    if (invitedFriendIds.length > 0) {
+      formData.set("invited_friend_ids", invitedFriendIds.join(","));
+    }
 
     const result = await createSession(formData);
     if (result?.error) toast.error(result.error);
@@ -286,7 +297,7 @@ export function CreateSessionForm() {
 
         {/* ── Step: Players ─────────────────────────────────────── */}
         {step === "players" && format && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             <StepHeading
               title="Wie viele Spieler?"
               sub="Du als Host zählst bereits als Spieler 1"
@@ -325,6 +336,53 @@ export function CreateSessionForm() {
                 <Plus className="h-5 w-5" />
               </button>
             </div>
+
+            {/* Friend invite */}
+            {friends.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Freunde einladen</span>
+                  <span className="text-xs text-muted-foreground">(optional)</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {friends.map((friend) => {
+                    const invited = invitedFriendIds.includes(friend.user_id);
+                    return (
+                      <button
+                        key={friend.user_id}
+                        type="button"
+                        onClick={() =>
+                          setInvitedFriendIds((prev) =>
+                            invited
+                              ? prev.filter((id) => id !== friend.user_id)
+                              : [...prev, friend.user_id]
+                          )
+                        }
+                        className={cn(
+                          "flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-sm font-medium transition-all cursor-pointer",
+                          invited
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-card text-foreground hover:border-primary/50"
+                        )}
+                      >
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
+                          {friend.username.slice(0, 2).toUpperCase()}
+                        </span>
+                        {friend.username}
+                        {invited && <Check className="h-3.5 w-3.5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                {invitedFriendIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {invitedFriendIds.length} Freund{invitedFriendIds.length > 1 ? "e" : ""} wird nach dem Erstellen benachrichtigt
+                  </p>
+                )}
+              </div>
+            )}
+
             <Button
               type="button"
               className="w-full rounded-2xl"

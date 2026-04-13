@@ -58,5 +58,28 @@ export async function createSession(formData: FormData) {
     return { error: error.message };
   }
 
+  // Send invitations to selected friends
+  const invitedRaw = formData.get("invited_friend_ids") as string | null;
+  if (invitedRaw) {
+    const friendIds = invitedRaw.split(",").filter(Boolean);
+    if (friendIds.length > 0) {
+      const { data: sender } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+
+      await supabase.from("notifications").insert(
+        friendIds.map((friendId) => ({
+          user_id: friendId,
+          type: "session_invite",
+          title: `${sender?.username ?? "Jemand"} lädt dich ein`,
+          body: parsed.data.title,
+          data: { session_id: session.id },
+        }))
+      );
+    }
+  }
+
   redirect(`/sessions/${session.id}`);
 }
