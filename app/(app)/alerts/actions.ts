@@ -8,6 +8,8 @@ export async function createAlert(data: {
   format?: string;
   max_radius_km: number;
   days_of_week: number[];
+  lat: number;
+  lng: number;
 }) {
   const supabase = await createClient();
   const {
@@ -22,6 +24,8 @@ export async function createAlert(data: {
     format: data.format || null,
     max_radius_km: data.max_radius_km,
     days_of_week: data.days_of_week,
+    lat: data.lat,
+    lng: data.lng,
     status: "active",
   });
 
