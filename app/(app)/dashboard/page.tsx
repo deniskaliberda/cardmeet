@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { HeroActions } from "@/components/home/hero-actions";
-import { NearbySessions } from "@/components/home/nearby-sessions";
-import { UpcomingSessions } from "@/components/home/upcoming-sessions";
-import { TcgShortcuts } from "@/components/home/tcg-shortcuts";
+import { HomeView } from "@/components/home/home-view";
 
 export const metadata = { title: "Home — CardMeet" };
 
@@ -20,52 +17,69 @@ export default async function DashboardPage() {
 
   const userLat = (profile as any)?.lat ?? 52.52;
   const userLng = (profile as any)?.lng ?? 13.405;
+  const now = new Date().toISOString();
 
   const [
     { data: nearbySessions },
     { data: participations },
     { data: hostedUpcoming },
     { count: openCount },
+    { data: hostedAll },
+    { data: joinedAll },
+    { data: friendships },
   ] = await Promise.all([
-    // Nearby sessions via RPC
-    supabase.rpc("nearby_sessions", {
-      p_lat: userLat,
-      p_lng: userLng,
-      radius_km: 25,
-    }).limit(5),
+    supabase.rpc("nearby_sessions", { p_lat: userLat, p_lng: userLng, radius_km: 25 }).limit(5),
 
-    // Sessions the user has joined
     supabase
       .from("session_participants")
       .select("sessions(id, title, tcg, format, max_players, current_players, city, location_name, scheduled_at)")
       .eq("user_id", user.id)
       .eq("status", "joined"),
 
-    // Sessions the user hosts (upcoming)
     supabase
       .from("sessions")
       .select("id, title, tcg, format, max_players, current_players, city, location_name, scheduled_at")
       .eq("host_id", user.id)
-      .gt("scheduled_at", new Date().toISOString())
+      .gt("scheduled_at", now)
       .order("scheduled_at", { ascending: true })
       .limit(5),
 
-    // Total open session count for HeroActions
     supabase
       .from("sessions")
       .select("id", { count: "exact", head: true })
       .eq("status", "open")
-      .gt("scheduled_at", new Date().toISOString()),
+      .gt("scheduled_at", now),
+
+    // All hosted sessions (for Meine Sessions tab)
+    supabase
+      .from("sessions")
+      .select("*, profiles!sessions_host_id_fkey(id, username, avatar_url)")
+      .eq("host_id", user.id)
+      .order("scheduled_at", { ascending: true }),
+
+    // All joined sessions (for Meine Sessions tab)
+    supabase
+      .from("session_participants")
+      .select("session_id")
+      .eq("user_id", user.id)
+      .eq("status", "joined"),
+
+    // Friends for invite
+    supabase
+      .from("friendships")
+      .select("requester_id, addressee_id, profiles!friendships_addressee_id_fkey(id, username, avatar_url), profiles!friendships_requester_id_fkey(id, username, avatar_url)")
+      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+      .eq("status", "accepted"),
   ]);
 
-  // Merge joined + hosted upcoming sessions, sorted by date
-  const joinedUpcoming = (participations ?? [])
+  // ── Overview tab data ─────────────────────────────────────────────────────
+  const joinedUpcomingCompact = (participations ?? [])
     .map((p) => (p as any).sessions)
     .filter((s: any) => s && new Date(s.scheduled_at) > new Date());
 
   const allUpcoming = [
     ...(hostedUpcoming ?? []),
-    ...joinedUpcoming,
+    ...joinedUpcomingCompact,
   ]
     .filter((s, i, arr) => arr.findIndex((x: any) => x.id === (s as any).id) === i)
     .sort((a: any, b: any) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
@@ -76,53 +90,78 @@ export default async function DashboardPage() {
   );
 
   const nearbyMapped = (nearbySessions ?? []).map((s: any) => ({
-    id: s.id,
-    title: s.title,
-    tcg: s.tcg,
-    format: s.format,
-    power_level: s.power_level ?? null,
-    max_players: s.max_players,
-    current_players: s.current_players,
-    status: s.status,
-    city: s.city ?? null,
-    location_name: s.location_name ?? null,
-    scheduled_at: s.scheduled_at,
-    host_id: s.host_id,
-    profiles: s.profiles ?? null,
+    id: s.id, title: s.title, tcg: s.tcg, format: s.format,
+    power_level: s.power_level ?? null, max_players: s.max_players,
+    current_players: s.current_players, status: s.status,
+    city: s.city ?? null, location_name: s.location_name ?? null,
+    scheduled_at: s.scheduled_at, host_id: s.host_id, profiles: s.profiles ?? null,
   }));
+
+  // ── Meine Sessions tab data ───────────────────────────────────────────────
+  const participantIds = (joinedAll ?? []).map((p) => p.session_id);
+
+  const { data: joinedSessionsFull } = participantIds.length > 0
+    ? await supabase
+        .from("sessions")
+        .select("*, profiles!sessions_host_id_fkey(id, username, avatar_url)")
+        .in("id", participantIds)
+        .neq("host_id", user.id)
+        .order("scheduled_at", { ascending: true })
+    : { data: [] };
+
+  const allSessions = [
+    ...(hostedAll ?? []).map((s) => ({ ...s, role: "host" as const })),
+    ...(joinedSessionsFull ?? []).map((s) => ({ ...s, role: "participant" as const })),
+  ].sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+
+  const myUpcoming = allSessions.filter((s) => new Date(s.scheduled_at) > new Date());
+  const myPast = allSessions.filter((s) => new Date(s.scheduled_at) <= new Date());
+  const firstSession = myUpcoming[0] ?? myPast[0] ?? null;
+
+  const [initialParticipants, initialMessages] = firstSession
+    ? await Promise.all([
+        supabase
+          .from("session_participants")
+          .select("user_id, status, profiles(id, username, avatar_url)")
+          .eq("session_id", firstSession.id)
+          .eq("status", "joined")
+          .then((r) => r.data ?? []),
+        supabase
+          .from("messages")
+          .select("*, profiles(username, avatar_url)")
+          .eq("session_id", firstSession.id)
+          .order("created_at", { ascending: true })
+          .limit(100)
+          .then((r) => r.data ?? []),
+      ])
+    : [[], []];
+
+  const friends = (friendships ?? []).map((f) => {
+    const isRequester = f.requester_id === user.id;
+    const p = isRequester
+      ? (f as any)["profiles!friendships_addressee_id_fkey"]
+      : (f as any)["profiles!friendships_requester_id_fkey"];
+    return { user_id: p?.id ?? "", username: p?.username ?? "Unbekannt", avatar_url: p?.avatar_url ?? null, avg_rating: null };
+  }).filter((f) => f.user_id);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Guten Morgen" : hour < 18 ? "Guten Tag" : "Guten Abend";
 
   return (
-    <div className="space-y-8 max-w-2xl mx-auto">
-      {/* Greeting */}
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-[-0.02em]">
-          {greeting}, {profile?.username ?? "Spieler"} 👋
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Was steht heute an?
-        </p>
-      </div>
-
-      {/* Quick actions */}
-      <HeroActions openSessionCount={openCount ?? 0} />
-
-      {/* Upcoming sessions */}
-      {allUpcoming.length > 0 && (
-        <UpcomingSessions sessions={allUpcoming as any} />
-      )}
-
-      {/* TCG shortcuts */}
-      <TcgShortcuts />
-
-      {/* Nearby sessions */}
-      <NearbySessions
-        sessions={nearbyMapped}
-        currentUserId={user.id}
-        joinedSessionIds={joinedSessionIds}
-      />
-    </div>
+    <HomeView
+      username={profile?.username ?? "Spieler"}
+      greeting={greeting}
+      openCount={openCount ?? 0}
+      allUpcoming={allUpcoming}
+      nearbyMapped={nearbyMapped}
+      joinedSessionIds={joinedSessionIds}
+      mySessionsUpcoming={myUpcoming}
+      mySessionsPast={myPast}
+      initialSessionId={firstSession?.id ?? null}
+      initialParticipants={initialParticipants as any}
+      initialMessages={initialMessages as any}
+      currentUserId={user.id}
+      friends={friends}
+    />
   );
 }
