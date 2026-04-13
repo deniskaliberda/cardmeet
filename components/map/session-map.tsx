@@ -260,34 +260,34 @@ export function SessionMap({
           .cm-hover-popup .maplibregl-popup-content {
             padding: 0 !important;
             border-radius: 14px !important;
-            border: 1px solid rgba(0,0,0,0.08) !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.06) !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 1px 6px rgba(0,0,0,0.3) !important;
             overflow: hidden !important;
-            background: var(--card, #ffffff) !important;
+            background: #1e293b !important;
           }
           .cm-hover-popup .maplibregl-popup-tip { display: none !important; }
           .cm-selected-popup .maplibregl-popup-content {
             padding: 0 !important;
             border-radius: 14px !important;
-            border: 1px solid rgba(0,0,0,0.08) !important;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08) !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 2px 10px rgba(0,0,0,0.3) !important;
             overflow: hidden !important;
-            background: var(--card, #ffffff) !important;
+            background: #1e293b !important;
           }
           .cm-selected-popup .maplibregl-popup-tip {
-            border-top-color: var(--card, #ffffff) !important;
+            border-top-color: #1e293b !important;
           }
           .cm-selected-popup .maplibregl-popup-close-button {
             font-size: 18px !important;
-            color: #6b7280 !important;
+            color: #94a3b8 !important;
             padding: 6px 10px !important;
             line-height: 1 !important;
             top: 2px !important;
             right: 2px !important;
           }
           .cm-selected-popup .maplibregl-popup-close-button:hover {
-            color: #111 !important;
-            background: rgba(0,0,0,0.04) !important;
+            color: #f1f5f9 !important;
+            background: rgba(255,255,255,0.08) !important;
             border-radius: 8px !important;
           }
         `;
@@ -405,7 +405,7 @@ export function SessionMap({
     hoverCloseTimerRef.current = setTimeout(() => {
       hoverPopupRef.current?.remove();
       hoverPopupRef.current = null;
-    }, 180);
+    }, 600);
   }
 
   function showHoverPopup(sessionId: string) {
@@ -431,16 +431,16 @@ export function SessionMap({
         font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
         width:220px; cursor:pointer;
       ">
-        <div style="padding:14px 14px 0; border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:10px; margin-bottom:10px;">
+        <div style="padding:14px 14px 10px; border-bottom:1px solid rgba(255,255,255,0.07); margin-bottom:10px;">
           <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
             <span style="width:8px; height:8px; border-radius:50%; background:${color}; display:inline-block; flex-shrink:0;"></span>
             <span style="font-size:10.5px; color:${color}; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;">${tcg?.shortName ?? session.tcg} · ${session.format}</span>
           </div>
-          <div style="font-size:14px; font-weight:600; color:#111; line-height:1.3; margin-bottom:0;">${session.title}</div>
+          <div style="font-size:14px; font-weight:600; color:#f1f5f9; line-height:1.3; margin-bottom:0;">${session.title}</div>
         </div>
         <div style="padding:0 14px 14px; display:flex; flex-direction:column; gap:5px;">
-          <div style="font-size:12px; color:#555;">🕐 ${dateStr} Uhr</div>
-          ${session.location_name || session.city ? `<div style="font-size:12px; color:#555;">📍 ${session.location_name ?? session.city}</div>` : ""}
+          <div style="font-size:12px; color:#94a3b8;">🕐 ${dateStr} Uhr</div>
+          ${session.location_name || session.city ? `<div style="font-size:12px; color:#94a3b8;">📍 ${session.location_name ?? session.city}</div>` : ""}
           <div style="display:inline-flex; align-items:center; gap:5px; margin-top:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; background:${slotsBg}; color:${slotsColor}; border:1px solid ${slotsBorder}; width:fit-content;">
             👥 ${isFull ? "Session voll" : `${free} von ${session.max_players} frei`}
           </div>
@@ -496,17 +496,17 @@ export function SessionMap({
 
     const html = `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; width:230px;">
-        <div style="padding:14px 32px 12px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">
+        <div style="padding:14px 32px 12px 14px; border-bottom:1px solid rgba(255,255,255,0.07);">
           <div style="display:flex; align-items:center; gap:6px; margin-bottom:7px;">
             <span style="width:8px; height:8px; border-radius:50%; background:${color}; display:inline-block;"></span>
             <span style="font-size:10.5px; color:${color}; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;">${tcg?.shortName ?? session.tcg} · ${session.format}</span>
           </div>
-          <div style="font-size:14px; font-weight:600; color:#111; line-height:1.3;">${session.title}</div>
+          <div style="font-size:14px; font-weight:600; color:#f1f5f9; line-height:1.3;">${session.title}</div>
         </div>
         <div style="padding:12px 14px; display:flex; flex-direction:column; gap:5px;">
-          <div style="font-size:12px; color:#555;">🕐 ${dateStr} Uhr</div>
-          ${session.location_name || session.city ? `<div style="font-size:12px; color:#555;">📍 ${session.location_name || session.city}</div>` : ""}
-          <div style="font-size:12px; color:#555;">👤 ${session.host_username ?? "Unbekannt"}</div>
+          <div style="font-size:12px; color:#94a3b8;">🕐 ${dateStr} Uhr</div>
+          ${session.location_name || session.city ? `<div style="font-size:12px; color:#94a3b8;">📍 ${session.location_name || session.city}</div>` : ""}
+          <div style="font-size:12px; color:#94a3b8;">👤 ${session.host_username ?? "Unbekannt"}</div>
           <div style="display:inline-flex; align-items:center; gap:5px; margin-top:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; background:${slotsBg}; color:${slotsColor}; border:1px solid ${slotsBorder}; width:fit-content;">
             👥 ${isFull ? "Session voll" : `${free} von ${session.max_players} frei`}
           </div>
