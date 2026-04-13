@@ -26,18 +26,18 @@ export type MapSession = {
   host_avatar: string | null;
 };
 
-const MUTED_TCG_COLORS: Record<string, string> = {
-  magic: "#b8944a",
-  pokemon: "#baa84a",
-  yugioh: "#8a4a4a",
-  lorcana: "#6a6a9e",
-  onepiece: "#8a4a4a",
-  "flesh-and-blood": "#7a5a8a",
-  "weiss-schwarz": "#5a7a8a",
+const TCG_COLORS: Record<string, string> = {
+  magic: "#9B4DCA",
+  pokemon: "#FFCC00",
+  yugioh: "#1A3A6E",
+  lorcana: "#1E3A8A",
+  onepiece: "#DC2626",
+  "flesh-and-blood": "#B45309",
+  "weiss-schwarz": "#0EA5E9",
 };
 
-function getMutedColor(tcgId: string): string {
-  return MUTED_TCG_COLORS[tcgId] ?? "#6b7280";
+function getTcgColor(tcgId: string): string {
+  return TCG_COLORS[tcgId] ?? "#6366f1";
 }
 
 function sessionsToGeoJSON(sessions: MapSession[]): GeoJSON.FeatureCollection {
@@ -64,7 +64,7 @@ function sessionsToGeoJSON(sessions: MapSession[]): GeoJSON.FeatureCollection {
           location_name: s.location_name ?? "",
           scheduled_at: s.scheduled_at,
           host_username: s.host_username ?? "Unbekannt",
-          color: getMutedColor(s.tcg),
+          color: getTcgColor(s.tcg),
         },
       })),
   };
@@ -150,7 +150,30 @@ export function SessionMap({
         data: geojson,
       });
 
-      // Session circle layer
+      // Layer 1: outer glow
+      map.addLayer({
+        id: "session-glow",
+        type: "circle",
+        source: "sessions",
+        paint: {
+          "circle-radius": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false], 26,
+            ["boolean", ["feature-state", "hovered"], false], 22,
+            16,
+          ],
+          "circle-color": ["get", "color"],
+          "circle-opacity": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false], 0.22,
+            ["boolean", ["feature-state", "hovered"], false], 0.18,
+            0.0,
+          ],
+          "circle-blur": 0.6,
+        },
+      });
+
+      // Layer 2: main circle
       map.addLayer({
         id: "session-circles",
         type: "circle",
@@ -158,26 +181,43 @@ export function SessionMap({
         paint: {
           "circle-radius": [
             "case",
-            ["boolean", ["feature-state", "selected"], false],
-            12,
-            ["boolean", ["feature-state", "hovered"], false],
-            10,
-            7,
+            ["boolean", ["feature-state", "selected"], false], 13,
+            ["boolean", ["feature-state", "hovered"], false], 11,
+            8,
           ],
           "circle-color": ["get", "color"],
-          "circle-opacity": 0.85,
+          "circle-opacity": 1,
           "circle-stroke-width": [
             "case",
-            ["boolean", ["feature-state", "selected"], false],
-            3,
-            1.5,
+            ["boolean", ["feature-state", "selected"], false], 3,
+            ["boolean", ["feature-state", "hovered"], false], 2.5,
+            2,
           ],
-          "circle-stroke-color": [
+          "circle-stroke-color": "#ffffff",
+          "circle-pitch-alignment": "map",
+        },
+      });
+
+      // Layer 3: white inner dot
+      map.addLayer({
+        id: "session-inner",
+        type: "circle",
+        source: "sessions",
+        paint: {
+          "circle-radius": [
             "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#ffffff",
-            "rgba(255,255,255,0.6)",
+            ["boolean", ["feature-state", "selected"], false], 4.5,
+            ["boolean", ["feature-state", "hovered"], false], 3.5,
+            2.5,
           ],
+          "circle-color": "#ffffff",
+          "circle-opacity": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false], 1,
+            ["boolean", ["feature-state", "hovered"], false], 1,
+            0.85,
+          ],
+          "circle-pitch-alignment": "map",
         },
       });
 
@@ -190,12 +230,10 @@ export function SessionMap({
       });
 
       // Hover cursor
-      map.on("mouseenter", "session-circles", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", "session-circles", () => {
-        map.getCanvas().style.cursor = "";
-      });
+      for (const layer of ["session-circles", "session-inner", "session-glow"]) {
+        map.on("mouseenter", layer, () => { map.getCanvas().style.cursor = "pointer"; });
+        map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = ""; });
+      }
 
       // Fit bounds to sessions if there are any
       if (geojson.features.length > 0) {
@@ -312,7 +350,7 @@ export function SessionMap({
     if (!session?.lat || !session?.lng) return;
 
     const tcg = getTCG(session.tcg);
-    const color = getMutedColor(session.tcg);
+    const color = getTcgColor(session.tcg);
     const scheduledDate = new Date(session.scheduled_at);
     const dateStr = format(scheduledDate, "EEE, d. MMM · HH:mm", { locale: de });
 
