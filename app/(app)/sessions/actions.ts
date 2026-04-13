@@ -127,6 +127,39 @@ export async function pauseSession(sessionId: string, currentStatus: string) {
   return { success: true, newStatus };
 }
 
+export async function inviteToSession(sessionId: string, friendIds: string[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet" };
+  if (friendIds.length === 0) return { error: "Niemanden ausgewählt" };
+
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("title, host_id")
+    .eq("id", sessionId)
+    .eq("host_id", user.id)
+    .single();
+
+  if (!session) return { error: "Session nicht gefunden" };
+
+  const { data: sender } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+
+  await supabase.from("notifications").insert(
+    friendIds.map((friendId) => ({
+      user_id: friendId,
+      type: "session_invite",
+      title: `${sender?.username ?? "Jemand"} lädt dich ein`,
+      body: session.title,
+    }))
+  );
+
+  return { success: true };
+}
+
 export async function cancelSession(sessionId: string) {
   const supabase = await createClient();
   const {

@@ -11,7 +11,8 @@ import { SessionChat } from "@/components/session/session-chat";
 import { ParticipantList } from "@/components/session/participant-list";
 import { getTCG, getPowerLevel } from "@/lib/config/tcg";
 import { TCGIcon } from "@/components/icons/tcg-icons";
-import { leaveSession, cancelSession, pauseSession } from "@/app/(app)/sessions/actions";
+import { leaveSession, cancelSession, pauseSession, inviteToSession } from "@/app/(app)/sessions/actions";
+import { FriendInviteGrid } from "@/components/session/friend-invite-grid";
 import { ReviewForm } from "@/components/review/review-form";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -58,6 +59,8 @@ type Message = {
   profiles: { username: string; avatar_url: string | null } | null;
 };
 
+type Friend = { user_id: string; username: string; avatar_url: string | null; avg_rating: null };
+
 export function MySessionsView({
   upcoming,
   past,
@@ -65,6 +68,7 @@ export function MySessionsView({
   initialParticipants,
   initialMessages,
   currentUserId,
+  friends = [],
 }: {
   upcoming: Session[];
   past: Session[];
@@ -72,11 +76,14 @@ export function MySessionsView({
   initialParticipants: Participant[];
   initialMessages: Message[];
   currentUserId: string;
+  friends?: Friend[];
 }) {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [selectedId, setSelectedId] = useState<string | null>(initialSessionId);
   const [participants, setParticipants] = useState(initialParticipants);
   const [messages, setMessages] = useState(initialMessages);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteSelected, setInviteSelected] = useState<string[]>([]);
 
   const sessions = activeTab === "upcoming" ? upcoming : past;
   const selected = [...upcoming, ...past].find((s) => s.id === selectedId) ?? null;
@@ -176,6 +183,11 @@ export function MySessionsView({
             isPast={isPast}
             currentUserId={currentUserId}
             participants={participants}
+            friends={friends}
+            inviteOpen={inviteOpen}
+            inviteSelected={inviteSelected}
+            onInviteOpen={() => setInviteOpen((v) => !v)}
+            onInviteChange={setInviteSelected}
           />
 
           {/* Col 2: Participants */}
@@ -293,6 +305,11 @@ function SessionDetailColumn({
   isPast,
   currentUserId,
   participants,
+  friends,
+  inviteOpen,
+  inviteSelected,
+  onInviteOpen,
+  onInviteChange,
 }: {
   session: Session;
   isHost: boolean;
@@ -300,9 +317,15 @@ function SessionDetailColumn({
   isPast: boolean;
   currentUserId: string;
   participants: Participant[];
+  friends: Friend[];
+  inviteOpen: boolean;
+  inviteSelected: string[];
+  onInviteOpen: () => void;
+  onInviteChange: (ids: string[]) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [invitePending, startInviteTransition] = useTransition();
   const tcg = getTCG(session.tcg);
   const powerLevel =
     session.power_level != null
@@ -330,6 +353,19 @@ function SessionDetailColumn({
       } else {
         toast.success("Session abgesagt");
         router.refresh();
+      }
+    });
+  }
+
+  function handleInvite() {
+    startInviteTransition(async () => {
+      const result = await inviteToSession(session.id, inviteSelected);
+      if (result && "error" in result) {
+        toast.error(result.error);
+      } else {
+        toast.success(`${inviteSelected.length} Freund${inviteSelected.length !== 1 ? "e" : ""} eingeladen`);
+        onInviteChange([]);
+        onInviteOpen();
       }
     });
   }
@@ -443,6 +479,34 @@ function SessionDetailColumn({
             <Button size="sm" className="w-full rounded-xl text-xs" disabled={pending}>
               ✏️ Bearbeiten
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full rounded-xl text-xs"
+              onClick={onInviteOpen}
+              disabled={pending}
+            >
+              👥 Freunde einladen
+            </Button>
+            {inviteOpen && (
+              <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-3 space-y-2">
+                <FriendInviteGrid
+                  friends={friends}
+                  selected={inviteSelected}
+                  onSelectionChange={onInviteChange}
+                />
+                {inviteSelected.length > 0 && (
+                  <Button
+                    size="sm"
+                    className="w-full rounded-xl text-xs"
+                    onClick={handleInvite}
+                    disabled={invitePending}
+                  >
+                    {invitePending ? "Wird gesendet..." : `${inviteSelected.length} einladen`}
+                  </Button>
+                )}
+              </div>
+            )}
             <Button
               size="sm"
               variant="outline"

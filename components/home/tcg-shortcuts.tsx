@@ -12,7 +12,7 @@ export function TcgShortcuts() {
         {TCG_LIST.map((tcg) => (
           <Link
             key={tcg.id}
-            href={`/entdecken?tcg=${tcg.id}`}
+            href={`/sessions?tcg=${tcg.id}`}
             className="flex shrink-0 flex-col items-center gap-1.5"
           >
             <div
