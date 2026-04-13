@@ -10,6 +10,7 @@ import { getTCG } from "@/lib/config/tcg";
 import { TCGIcon } from "@/components/icons/tcg-icons";
 import { ReviewList } from "@/components/review/review-list";
 import { FriendList } from "@/components/friends/friend-list";
+import { AddFriendSearch } from "@/components/friends/add-friend-search";
 import { AlertCard } from "@/components/alerts/alert-card";
 import { CreateAlertForm } from "@/components/alerts/create-alert-form";
 import { ProfileForm } from "@/components/profile/profile-form";
@@ -191,7 +192,13 @@ export function ProfileView({
             <SettingsTab profile={profile} alerts={alerts} />
           )}
           {activeTab === "friends" && (
-            <FriendList friends={friends} pendingRequests={pendingRequests} />
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-sm font-medium mb-3">Freund hinzufügen</h4>
+                <AddFriendSearch />
+              </div>
+              <FriendList friends={friends} pendingRequests={pendingRequests} />
+            </div>
           )}
           {activeTab === "history" && (
             <HistoryTab sessions={hostedSessions} />
