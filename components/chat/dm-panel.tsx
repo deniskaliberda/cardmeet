@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams, useRouter } from "next/navigation";
 import { MessageCircle, X, ArrowLeft, Send } from "lucide-react";
@@ -23,7 +23,7 @@ type DMessage = {
   created_at: string;
 };
 
-export function DmPanel({ userId }: { userId: string }) {
+function DmPanelInner({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"list" | "chat">("list");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -349,5 +349,14 @@ export function DmPanel({ userId }: { userId: string }) {
         )}
       </div>
     </>
+  );
+}
+
+// Wrap in Suspense because useSearchParams() requires it in Next.js
+export function DmPanel(props: { userId: string }) {
+  return (
+    <Suspense fallback={null}>
+      <DmPanelInner {...props} />
+    </Suspense>
   );
 }
