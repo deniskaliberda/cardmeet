@@ -213,6 +213,7 @@ export async function updateSession(
     max_players: number;
     location_name: string;
     power_level: number | null;
+    entry_fee_cents: number;
   }
 ) {
   const supabase = await createClient();
@@ -225,6 +226,8 @@ export async function updateSession(
     return { error: "Datum fehlt" };
   if (data.max_players < 2)
     return { error: "Mindestens 2 Spieler" };
+  if (data.entry_fee_cents < 0)
+    return { error: "Kosten können nicht negativ sein" };
 
   const { error } = await supabase
     .from("sessions")
@@ -235,6 +238,7 @@ export async function updateSession(
       max_players: data.max_players,
       location_name: data.location_name.trim() || null,
       power_level: data.power_level,
+      entry_fee_cents: data.entry_fee_cents,
     })
     .eq("id", sessionId)
     .eq("host_id", user.id);

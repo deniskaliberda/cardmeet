@@ -43,6 +43,7 @@ type Session = {
   location_name?: string | null;
   scheduled_at: string;
   host_id: string;
+  entry_fee_cents?: number | null;
   profiles?: { id?: string; username: string; avatar_url: string | null } | null;
 };
 
@@ -473,7 +474,11 @@ function SessionDetailColumn({
         </div>
         <div className="rounded-lg bg-[var(--surface-container-low)] p-2 text-xs">
           <div className="text-muted-foreground">Kosten</div>
-          <div className="font-medium mt-0.5">Gratis</div>
+          <div className="font-medium mt-0.5">
+            {session.entry_fee_cents && session.entry_fee_cents > 0
+              ? `${(session.entry_fee_cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`
+              : "Gratis"}
+          </div>
         </div>
         <div className="rounded-lg bg-[var(--surface-container-low)] p-2 text-xs">
           <div className="text-muted-foreground">Spieler</div>

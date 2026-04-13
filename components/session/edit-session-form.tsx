@@ -23,6 +23,7 @@ type Session = {
   current_players: number;
   location_name?: string | null;
   scheduled_at: string;
+  entry_fee_cents?: number | null;
 };
 
 export function EditSessionForm({
@@ -47,11 +48,19 @@ export function EditSessionForm({
   const [maxPlayers, setMaxPlayers] = useState(session.max_players);
   const [locationName, setLocationName] = useState(session.location_name ?? "");
   const [powerLevel, setPowerLevel] = useState<number | null>(session.power_level ?? null);
+  const initialFee = session.entry_fee_cents ?? 0;
+  const [feePaid, setFeePaid] = useState(initialFee > 0);
+  const [feeEuros, setFeeEuros] = useState(
+    initialFee > 0 ? (initialFee / 100).toFixed(2) : ""
+  );
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   function handleSave() {
     startTransition(async () => {
+      const entry_fee_cents = feePaid
+        ? Math.round(parseFloat(feeEuros.replace(",", ".") || "0") * 100)
+        : 0;
       const result = await updateSession(session.id, {
         title,
         description,
@@ -59,12 +68,16 @@ export function EditSessionForm({
         max_players: maxPlayers,
         location_name: locationName,
         power_level: powerLevel,
+        entry_fee_cents,
       });
       if (result?.error) {
         toast.error(result.error);
       } else {
         toast.success("Session aktualisiert");
-        onSaved({ title, description, scheduled_at: scheduledAt, max_players: maxPlayers, location_name: locationName, power_level: powerLevel });
+        const entry_fee_cents = feePaid
+          ? Math.round(parseFloat(feeEuros.replace(",", ".") || "0") * 100)
+          : 0;
+        onSaved({ title, description, scheduled_at: scheduledAt, max_players: maxPlayers, location_name: locationName, power_level: powerLevel, entry_fee_cents });
         router.refresh();
         onClose();
       }
@@ -167,6 +180,56 @@ export function EditSessionForm({
           className="rounded-xl text-sm"
           maxLength={200}
         />
+      </div>
+
+      {/* Entry Fee */}
+      <div className="space-y-1.5">
+        <Label className="text-xs">Kosten</Label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => { setFeePaid(false); setFeeEuros(""); }}
+            className={cn(
+              "flex-1 rounded-xl border-2 py-2 text-xs font-medium transition-all cursor-pointer",
+              !feePaid
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:border-primary/50"
+            )}
+          >
+            Kostenlos
+          </button>
+          <button
+            type="button"
+            onClick={() => setFeePaid(true)}
+            className={cn(
+              "flex-1 rounded-xl border-2 py-2 text-xs font-medium transition-all cursor-pointer",
+              feePaid
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:border-primary/50"
+            )}
+          >
+            Kostenpflichtig
+          </button>
+        </div>
+        {feePaid && (
+          <div className="flex items-center gap-2 rounded-xl border-2 border-border bg-card px-3 py-2">
+            <span className="text-sm text-muted-foreground">€</span>
+            <Input
+              type="number"
+              min="0"
+              step="0.50"
+              value={feeEuros}
+              onChange={(e) => setFeeEuros(e.target.value)}
+              placeholder="0,00"
+              className="border-0 p-0 h-auto text-sm shadow-none focus-visible:ring-0"
+            />
+          </div>
+        )}
+        {feePaid && (
+          <p className="text-[11px] text-muted-foreground">
+            z.B. Raummiete oder Turnier-Eintritt
+          </p>
+        )}
       </div>
 
       {/* Power Level */}
