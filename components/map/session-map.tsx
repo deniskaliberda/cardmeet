@@ -243,15 +243,47 @@ export function SessionMap({
         const feature = e.features?.[0];
         if (!feature?.properties) return;
         const sessionId = feature.properties.id as string;
-        // Don't show hover popup if this session is already selected
         if (selectedIdRef.current === sessionId) return;
         if (hoverCloseTimerRef.current) clearTimeout(hoverCloseTimerRef.current);
-        showHoverPopup(sessionId, e.lngLat);
+        showHoverPopup(sessionId);
       });
       map.on("mouseleave", "session-circles", () => {
         map.getCanvas().style.cursor = "";
         scheduleHoverClose();
       });
+
+      // Inject popup styles into map container once
+      const style = document.createElement("style");
+      style.textContent = `
+        .cm-hover-popup .maplibregl-popup-content {
+          padding: 0;
+          border-radius: 14px;
+          border: 1px solid rgba(0,0,0,0.08);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.06);
+          overflow: hidden;
+          background: #ffffff;
+        }
+        .cm-hover-popup .maplibregl-popup-tip { display: none; }
+        .cm-selected-popup .maplibregl-popup-content {
+          padding: 0;
+          border-radius: 14px;
+          border: 1px solid rgba(0,0,0,0.08);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08);
+          overflow: hidden;
+          background: #ffffff;
+        }
+        .cm-selected-popup .maplibregl-popup-tip {
+          border-top-color: #ffffff;
+        }
+        .cm-selected-popup .maplibregl-popup-close-button {
+          font-size: 18px;
+          color: #6b7280;
+          padding: 6px 10px;
+          line-height: 1;
+        }
+        .cm-selected-popup .maplibregl-popup-close-button:hover { color: #111; background: rgba(0,0,0,0.04); }
+      `;
+      containerRef.current?.appendChild(style);
 
       // Fit bounds to sessions if there are any
       if (geojson.features.length > 0) {
@@ -286,17 +318,14 @@ export function SessionMap({
     }
   }, [center?.lat, center?.lng, radius]);
 
-  // Highlight hovered session from list
+  // Highlight hovered session from list + show hover popup
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    // Clear previous hover state (only that feature, not selected state)
+    // Clear previous hover state
     if (hoveredIndexRef.current !== null) {
-      map.setFeatureState(
-        { source: "sessions", id: hoveredIndexRef.current },
-        { hovered: false }
-      );
+      map.setFeatureState({ source: "sessions", id: hoveredIndexRef.current }, { hovered: false });
       hoveredIndexRef.current = null;
     }
 
@@ -306,13 +335,18 @@ export function SessionMap({
         (f) => f.properties?.id === hoveredSessionId
       );
       if (featureIndex >= 0) {
-        map.setFeatureState(
-          { source: "sessions", id: featureIndex },
-          { hovered: true }
-        );
+        map.setFeatureState({ source: "sessions", id: featureIndex }, { hovered: true });
         hoveredIndexRef.current = featureIndex;
       }
+      // Show popup if not already selected
+      if (selectedIdRef.current !== hoveredSessionId) {
+        if (hoverCloseTimerRef.current) clearTimeout(hoverCloseTimerRef.current);
+        showHoverPopup(hoveredSessionId);
+      }
+    } else {
+      scheduleHoverClose();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hoveredSessionId, sessions]);
 
   // Update GeoJSON when sessions change
@@ -365,7 +399,7 @@ export function SessionMap({
     }, 180);
   }
 
-  function showHoverPopup(sessionId: string, lngLat: maplibregl.LngLat) {
+  function showHoverPopup(sessionId: string) {
     const map = mapRef.current;
     if (!map) return;
     hoverPopupRef.current?.remove();
@@ -378,50 +412,45 @@ export function SessionMap({
     const dateStr = format(new Date(session.scheduled_at), "EEE, d. MMM · HH:mm", { locale: de });
     const free = session.max_players - session.current_players;
     const isFull = free <= 0;
+    const slotsColor = isFull ? "#dc2626" : color;
+    const slotsBg = isFull ? "rgba(220,38,38,0.08)" : `${color}12`;
+    const slotsBorder = isFull ? "rgba(220,38,38,0.2)" : `${color}28`;
 
     const html = `
       <a href="/sessions/${session.id}" style="
-        display: block;
-        text-decoration: none;
-        color: inherit;
-        font-family: system-ui, -apple-system, sans-serif;
-        min-width: 200px;
-        font-size: 13px;
-        line-height: 1.45;
-        cursor: pointer;
+        display:block; text-decoration:none; color:inherit;
+        font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+        width:220px; cursor:pointer;
       ">
-        <div style="display:flex; align-items:center; gap:6px; margin-bottom:7px;">
-          <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:${color}; flex-shrink:0;"></span>
-          <span style="font-size:11px; color:${color}; font-weight:700; letter-spacing:0.02em;">${tcg?.shortName ?? session.tcg} · ${session.format}</span>
+        <div style="padding:14px 14px 0; border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:10px; margin-bottom:10px;">
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:${color}; display:inline-block; flex-shrink:0;"></span>
+            <span style="font-size:10.5px; color:${color}; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;">${tcg?.shortName ?? session.tcg} · ${session.format}</span>
+          </div>
+          <div style="font-size:14px; font-weight:600; color:#111; line-height:1.3; margin-bottom:0;">${session.title}</div>
         </div>
-        <div style="font-weight:650; font-size:14px; margin-bottom:5px; color:#111;">${session.title}</div>
-        <div style="color:#6b7280; font-size:12px; margin-bottom:2px;">${dateStr} Uhr</div>
-        ${session.location_name || session.city ? `<div style="color:#6b7280; font-size:12px; margin-bottom:2px;">📍 ${session.location_name ?? session.city}</div>` : ""}
-        <div style="
-          display:inline-flex; align-items:center; gap:5px;
-          margin-top:8px; padding:3px 10px; border-radius:20px;
-          font-size:11px; font-weight:600;
-          background:${isFull ? "rgba(229,62,62,0.1)" : `${color}15`};
-          color:${isFull ? "#dc2626" : color};
-          border: 1px solid ${isFull ? "rgba(229,62,62,0.25)" : `${color}30`};
-        ">
-          👥 ${isFull ? "Voll" : `${free} von ${session.max_players} frei`}
+        <div style="padding:0 14px 14px; display:flex; flex-direction:column; gap:5px;">
+          <div style="font-size:12px; color:#555;">🕐 ${dateStr} Uhr</div>
+          ${session.location_name || session.city ? `<div style="font-size:12px; color:#555;">📍 ${session.location_name ?? session.city}</div>` : ""}
+          <div style="display:inline-flex; align-items:center; gap:5px; margin-top:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; background:${slotsBg}; color:${slotsColor}; border:1px solid ${slotsBorder}; width:fit-content;">
+            👥 ${isFull ? "Session voll" : `${free} von ${session.max_players} frei`}
+          </div>
+          <div style="margin-top:6px; font-size:11px; color:${color}; font-weight:600;">Details ansehen →</div>
         </div>
-        <div style="margin-top:8px; font-size:11px; color:${color}; font-weight:600; opacity:0.8;">Klicken für Details →</div>
       </a>
     `;
 
     const popup = new maplibregl.Popup({
       closeButton: false,
       closeOnClick: false,
-      offset: 16,
-      maxWidth: "250px",
+      offset: 18,
+      maxWidth: "none",
+      className: "cm-hover-popup",
     })
       .setLngLat([session.lng, session.lat])
       .setHTML(html)
       .addTo(map);
 
-    // Keep popup open while hovering over it
     const el = popup.getElement();
     el.addEventListener("mouseenter", () => {
       if (hoverCloseTimerRef.current) clearTimeout(hoverCloseTimerRef.current);
@@ -450,25 +479,41 @@ export function SessionMap({
     const scheduledDate = new Date(session.scheduled_at);
     const dateStr = format(scheduledDate, "EEE, d. MMM · HH:mm", { locale: de });
 
+    const free = session.max_players - session.current_players;
+    const isFull = free <= 0;
+    const slotsColor = isFull ? "#dc2626" : color;
+    const slotsBg = isFull ? "rgba(220,38,38,0.08)" : `${color}12`;
+    const slotsBorder = isFull ? "rgba(220,38,38,0.2)" : `${color}28`;
+
     const html = `
-      <div style="font-family: system-ui, sans-serif; min-width: 180px; font-size: 13px; line-height: 1.4;">
-        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-          <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${color};"></span>
-          <span style="font-size: 11px; color: ${color}; font-weight: 600;">${tcg?.shortName ?? session.tcg}</span>
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; width:230px;">
+        <div style="padding:14px 32px 12px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:7px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:${color}; display:inline-block;"></span>
+            <span style="font-size:10.5px; color:${color}; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;">${tcg?.shortName ?? session.tcg} · ${session.format}</span>
+          </div>
+          <div style="font-size:14px; font-weight:600; color:#111; line-height:1.3;">${session.title}</div>
         </div>
-        <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">${session.title}</div>
-        <div style="color: #6b7280;">${dateStr} Uhr</div>
-        <div style="color: #6b7280;">${session.location_name || session.city || ""}</div>
-        <div style="color: #6b7280; margin-top: 2px;">${session.current_players}/${session.max_players} Spieler</div>
-        <a href="/sessions/${session.id}" style="display: inline-block; margin-top: 8px; color: ${color}; font-weight: 500; text-decoration: none; font-size: 12px;">Details ansehen &rarr;</a>
+        <div style="padding:12px 14px; display:flex; flex-direction:column; gap:5px;">
+          <div style="font-size:12px; color:#555;">🕐 ${dateStr} Uhr</div>
+          ${session.location_name || session.city ? `<div style="font-size:12px; color:#555;">📍 ${session.location_name || session.city}</div>` : ""}
+          <div style="font-size:12px; color:#555;">👤 ${session.host_username ?? "Unbekannt"}</div>
+          <div style="display:inline-flex; align-items:center; gap:5px; margin-top:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; background:${slotsBg}; color:${slotsColor}; border:1px solid ${slotsBorder}; width:fit-content;">
+            👥 ${isFull ? "Session voll" : `${free} von ${session.max_players} frei`}
+          </div>
+          <a href="/sessions/${session.id}" style="margin-top:8px; display:inline-block; padding:7px 14px; border-radius:10px; background:${color}; color:#fff; font-size:12px; font-weight:600; text-decoration:none; text-align:center;">
+            Session ansehen →
+          </a>
+        </div>
       </div>
     `;
 
     const popup = new maplibregl.Popup({
       closeButton: true,
       closeOnClick: false,
-      offset: 14,
-      maxWidth: "240px",
+      offset: 16,
+      maxWidth: "none",
+      className: "cm-selected-popup",
     })
       .setLngLat([session.lng, session.lat])
       .setHTML(html)
