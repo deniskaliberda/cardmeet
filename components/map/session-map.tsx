@@ -91,8 +91,10 @@ export function SessionMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
+  const hoveredIndexRef = useRef<number | null>(null);
 
   const selectedSessionId = useExplorerStore((s) => s.selectedSessionId);
+  const hoveredSessionId = useExplorerStore((s) => s.hoveredSessionId);
   const setSelected = useExplorerStore((s) => s.setSelected);
 
   const flyToSession = useCallback(
@@ -227,6 +229,35 @@ export function SessionMap({
       map.once("load", apply);
     }
   }, [center?.lat, center?.lng, radius]);
+
+  // Highlight hovered session from list
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    // Clear previous hover state (only that feature, not selected state)
+    if (hoveredIndexRef.current !== null) {
+      map.setFeatureState(
+        { source: "sessions", id: hoveredIndexRef.current },
+        { hovered: false }
+      );
+      hoveredIndexRef.current = null;
+    }
+
+    if (hoveredSessionId) {
+      const geojson = sessionsToGeoJSON(sessions);
+      const featureIndex = geojson.features.findIndex(
+        (f) => f.properties?.id === hoveredSessionId
+      );
+      if (featureIndex >= 0) {
+        map.setFeatureState(
+          { source: "sessions", id: featureIndex },
+          { hovered: true }
+        );
+        hoveredIndexRef.current = featureIndex;
+      }
+    }
+  }, [hoveredSessionId, sessions]);
 
   // Update GeoJSON when sessions change
   useEffect(() => {
