@@ -93,6 +93,8 @@ export function MySessionsView({
 
   async function selectSession(id: string) {
     setSelectedId(id);
+    setMessages([]);      // sofort leeren, kein Flash der alten Nachrichten
+    setParticipants([]);
     // Fetch participants + messages client-side
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
