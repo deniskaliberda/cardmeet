@@ -24,6 +24,24 @@ export async function joinSession(sessionId: string) {
     return { error: error.message };
   }
 
+  // Notify the host
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("host_id, title, profiles(username)")
+    .eq("id", sessionId)
+    .single();
+
+  if (session?.host_id && session.host_id !== user.id) {
+    const profiles = session.profiles as { username: string } | { username: string }[] | null;
+    const joinerUsername = (Array.isArray(profiles) ? profiles[0] : profiles)?.username ?? "Jemand";
+    await supabase.from("notifications").insert({
+      user_id: session.host_id,
+      type: "session_join",
+      title: `${joinerUsername} ist deiner Session beigetreten`,
+      body: session.title,
+    });
+  }
+
   revalidatePath(`/sessions/${sessionId}`);
   revalidatePath("/sessions");
   return { success: true };
@@ -66,6 +84,22 @@ export async function removeParticipant(sessionId: string, userId: string) {
 
   if (error) return { error: error.message };
 
+  // Notify the removed participant
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("title")
+    .eq("id", sessionId)
+    .single();
+
+  if (session) {
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      type: "session_removed",
+      title: "Du wurdest aus einer Session entfernt",
+      body: session.title,
+    });
+  }
+
   revalidatePath(`/sessions/${sessionId}`);
   return { success: true };
 }
@@ -101,6 +135,13 @@ export async function cancelSession(sessionId: string) {
 
   if (!user) return { error: "Nicht angemeldet" };
 
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("title")
+    .eq("id", sessionId)
+    .eq("host_id", user.id)
+    .single();
+
   const { error } = await supabase
     .from("sessions")
     .update({ status: "cancelled" })
@@ -108,6 +149,27 @@ export async function cancelSession(sessionId: string) {
     .eq("host_id", user.id);
 
   if (error) return { error: error.message };
+
+  // Notify all participants
+  if (session) {
+    const { data: participants } = await supabase
+      .from("session_participants")
+      .select("user_id")
+      .eq("session_id", sessionId)
+      .eq("status", "joined")
+      .neq("user_id", user.id);
+
+    if (participants && participants.length > 0) {
+      await supabase.from("notifications").insert(
+        participants.map((p) => ({
+          user_id: p.user_id,
+          type: "session_cancelled",
+          title: "Session wurde abgesagt",
+          body: session.title,
+        }))
+      );
+    }
+  }
 
   revalidatePath(`/sessions/${sessionId}`);
   revalidatePath("/sessions");

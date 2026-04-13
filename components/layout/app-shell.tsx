@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 type AppUser = {
   id: string;
@@ -98,8 +99,9 @@ export function AppShell({
             })}
           </div>
 
-          {/* Right: avatar + logout */}
+          {/* Right: bell + avatar + logout */}
           <div className="flex items-center gap-2">
+            <NotificationBell userId={user.id} />
             <DropdownMenu>
               <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-border bg-primary text-xs font-semibold text-white transition-colors hover:border-primary focus:outline-none">
                 {user.username.slice(0, 2).toUpperCase()}
