@@ -12,6 +12,17 @@ import { MapPin, Users, Calendar, Clock } from "lucide-react";
 import { getTCG, getPowerLevel } from "@/lib/config/tcg";
 import { joinSession, leaveSession, cancelSession } from "@/app/(app)/sessions/actions";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type SessionDetailProps = {
   session: {
@@ -190,9 +201,28 @@ export function SessionDetail({
               </Button>
             )}
             {isHost && (
-              <Button variant="destructive" onClick={handleCancel}>
-                Absagen
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger render={<Button variant="destructive" />}>
+                  Absagen
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Session absagen?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Diese Aktion kann nicht rückgängig gemacht werden. Alle Teilnehmer werden über die Absage informiert.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={handleCancel}
+                    >
+                      Ja, absagen
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         )}

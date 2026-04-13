@@ -15,6 +15,17 @@ import { leaveSession, cancelSession, pauseSession } from "@/app/(app)/sessions/
 import { ReviewForm } from "@/components/review/review-form";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Session = {
   id: string;
@@ -441,15 +452,37 @@ function SessionDetailColumn({
             >
               {session.status === "paused" ? "▶ Fortsetzen" : "⏸ Pausieren"}
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full rounded-xl text-xs border-destructive text-destructive hover:bg-destructive/10"
-              onClick={handleCancel}
-              disabled={pending}
-            >
-              🗑️ Absagen
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full rounded-xl text-xs border-destructive text-destructive hover:bg-destructive/10"
+                    disabled={pending}
+                  />
+                }
+              >
+                🗑️ Absagen
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Session absagen?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Diese Aktion kann nicht rückgängig gemacht werden. Alle Teilnehmer werden über die Absage informiert.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={handleCancel}
+                  >
+                    Ja, absagen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </>
         )}
         {isParticipant && !isHost && !isPast && (
