@@ -7,9 +7,20 @@ export async function getDMConversations() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { conversations: [] };
 
+  type RawDM = {
+    id: string;
+    sender_id: string;
+    receiver_id: string;
+    content: string;
+    read: boolean;
+    created_at: string;
+    sender: { id: string; username: string; avatar_url: string | null } | null;
+    receiver: { id: string; username: string; avatar_url: string | null } | null;
+  };
+
   // All DMs involving this user, newest first
-  const { data: messages } = await supabase
-    .from("direct_messages")
+  const { data: rawMessages } = await supabase
+    .from("direct_messages" as any)
     .select(
       "id, sender_id, receiver_id, content, read, created_at, " +
       "sender:profiles!direct_messages_sender_id_fkey(id, username, avatar_url), " +
@@ -18,6 +29,8 @@ export async function getDMConversations() {
     .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
     .order("created_at", { ascending: false })
     .limit(200);
+
+  const messages = (rawMessages ?? []) as unknown as RawDM[];
 
   // Group by conversation partner (keep only first/latest per partner)
   const seen = new Set<string>();
@@ -61,7 +74,7 @@ export async function getDMMessages(friendId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { messages: [] };
 
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from("direct_messages")
     .select("id, sender_id, content, read, created_at")
     .or(
@@ -72,14 +85,14 @@ export async function getDMMessages(friendId: string) {
     .limit(100);
 
   // Mark unread messages as read
-  await supabase
+  await (supabase as any)
     .from("direct_messages")
     .update({ read: true })
     .eq("sender_id", friendId)
     .eq("receiver_id", user.id)
     .eq("read", false);
 
-  return { messages: data ?? [] };
+  return { messages: (data ?? []) as { id: string; sender_id: string; content: string; read: boolean; created_at: string }[] };
 }
 
 export async function sendDM(receiverId: string, content: string) {
@@ -88,7 +101,7 @@ export async function sendDM(receiverId: string, content: string) {
   if (!user) return { error: "Nicht angemeldet" };
   if (!content.trim()) return { error: "Nachricht leer" };
 
-  const { error } = await supabase.from("direct_messages").insert({
+  const { error } = await (supabase as any).from("direct_messages").insert({
     sender_id: user.id,
     receiver_id: receiverId,
     content: content.trim(),
@@ -118,7 +131,7 @@ export async function getUnreadDMCount() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return 0;
 
-  const { count } = await supabase
+  const { count } = await (supabase as any)
     .from("direct_messages")
     .select("id", { count: "exact", head: true })
     .eq("receiver_id", user.id)
