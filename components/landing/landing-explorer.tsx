@@ -4,10 +4,10 @@ import React, { useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, CalendarDays, MapPin, Users } from "lucide-react";
+import { Calendar, CalendarDays, Clock, MapPin, Users, X } from "lucide-react";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { useExplorerStore } from "@/lib/stores/explorer-store";
-import type { DateFilter, TimeFilter } from "@/lib/stores/explorer-store";
+import type { DateFilter } from "@/lib/stores/explorer-store";
 import type { MapSession } from "@/components/map/session-map";
 
 const SessionMap = dynamic(
@@ -67,13 +67,17 @@ function matchesDate(session: MapSession, filter: DateFilter): boolean {
   return d >= range.from && d < range.to;
 }
 
-function matchesTime(session: MapSession, filter: TimeFilter): boolean {
-  if (filter === "any") return true;
-  const h = new Date(session.scheduled_at).getHours();
-  if (filter === "morning") return h >= 6 && h < 12;
-  if (filter === "afternoon") return h >= 12 && h < 18;
-  if (filter === "evening") return h >= 18;
-  return true;
+function matchesFromMinutes(session: MapSession, fromMinutes: number | null): boolean {
+  if (fromMinutes === null) return true;
+  const d = new Date(session.scheduled_at);
+  const sessionMinutes = d.getHours() * 60 + d.getMinutes();
+  return sessionMinutes >= fromMinutes;
+}
+
+function minutesToLabel(minutes: number): string {
+  const h = Math.floor(minutes / 60).toString().padStart(2, "0");
+  const m = (minutes % 60).toString().padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 // ── Label helpers ─────────────────────────────────────────────────────────────
@@ -84,13 +88,6 @@ const DATE_OPTIONS: { id: DateFilter; label: string }[] = [
   { id: "tomorrow", label: "Morgen" },
   { id: "weekend", label: "Wochenende" },
   { id: "week", label: "Diese Woche" },
-];
-
-const TIME_OPTIONS: { id: TimeFilter; label: string }[] = [
-  { id: "any", label: "Jederzeit" },
-  { id: "morning", label: "Morgens" },
-  { id: "afternoon", label: "Nachmittags" },
-  { id: "evening", label: "Abends" },
 ];
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -110,13 +107,15 @@ export function LandingExplorer({
     selectedSessionId,
     activeTcg,
     dateFilter,
-    timeFilter,
+    fromMinutes,
     setSelected,
     setHovered,
     setTcgFilter,
     setDateFilter,
-    setTimeFilter,
+    setFromMinutes,
   } = useExplorerStore();
+
+  const timeInputRef = useRef<HTMLInputElement>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -124,7 +123,7 @@ export function LandingExplorer({
   const filtered = sessions
     .filter((s) => !activeTcg || s.tcg === activeTcg)
     .filter((s) => matchesDate(s, dateFilter))
-    .filter((s) => matchesTime(s, timeFilter));
+    .filter((s) => matchesFromMinutes(s, fromMinutes));
 
   useEffect(() => {
     if (!selectedSessionId || !listRef.current) return;
@@ -212,17 +211,44 @@ export function LandingExplorer({
           )}
         </div>
 
-        {/* ── Time filter ── */}
-        <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
-          {TIME_OPTIONS.map((opt) => (
-            <FilterPill
-              key={opt.id}
-              label={opt.label}
-              active={timeFilter === opt.id}
-              onClick={() => setTimeFilter(opt.id)}
-              small
-            />
-          ))}
+        {/* ── From-time picker ── */}
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          <Clock className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+          <span className="text-[11px] text-muted-foreground font-medium">Ab</span>
+          {fromMinutes !== null ? (
+            <button
+              type="button"
+              onClick={() => setFromMinutes(null)}
+              className="flex items-center gap-1 rounded-full border-2 px-2.5 py-0.5 text-[11px] font-semibold transition-all"
+              style={{
+                background: "rgba(0,102,255,0.13)",
+                borderColor: "var(--primary)",
+                color: "var(--primary)",
+              }}
+            >
+              {minutesToLabel(fromMinutes)} Uhr
+              <X className="h-2.5 w-2.5 opacity-70" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => timeInputRef.current?.showPicker?.()}
+              className="flex items-center gap-1 rounded-full border-2 border-dashed border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary cursor-pointer"
+            >
+              Uhrzeit wählen
+            </button>
+          )}
+          <input
+            ref={timeInputRef}
+            type="time"
+            className="absolute opacity-0 pointer-events-none w-0 h-0"
+            onChange={(e) => {
+              if (e.target.value) {
+                const [h, m] = e.target.value.split(":").map(Number);
+                setFromMinutes(h * 60 + m);
+              }
+            }}
+          />
         </div>
 
         {/* TCG Filter pills */}
