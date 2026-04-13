@@ -160,53 +160,6 @@ export const TCG_LIST: TCGConfig[] = [
       },
     ],
   },
-  {
-    id: "flesh-and-blood",
-    name: "Flesh and Blood",
-    shortName: "FaB",
-    icon: "Sword",
-    color: "#9333EA",
-    defaultPlayerCount: 2,
-    maxPlayerCount: 4,
-    formats: [
-      {
-        id: "blitz",
-        name: "Blitz",
-        playerCount: { min: 2, max: 2, default: 2 },
-      },
-      {
-        id: "classic-constructed",
-        name: "Classic Constructed",
-        playerCount: { min: 2, max: 2, default: 2 },
-      },
-      {
-        id: "draft",
-        name: "Draft",
-        playerCount: { min: 2, max: 8, default: 8 },
-      },
-    ],
-  },
-  {
-    id: "weiss-schwarz",
-    name: "Weiss Schwarz",
-    shortName: "Weiss",
-    icon: "Star",
-    color: "#0EA5E9",
-    defaultPlayerCount: 2,
-    maxPlayerCount: 4,
-    formats: [
-      {
-        id: "standard",
-        name: "Standard",
-        playerCount: { min: 2, max: 2, default: 2 },
-      },
-      {
-        id: "neo-standard",
-        name: "Neo-Standard",
-        playerCount: { min: 2, max: 2, default: 2 },
-      },
-    ],
-  },
 ];
 
 export function getTCG(id: string): TCGConfig | undefined {
