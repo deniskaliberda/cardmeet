@@ -216,7 +216,11 @@ export function CreateSessionForm() {
                     setFormatId(f.id);
                     setPowerLevel("");
                     setMaxPlayers(f.playerCount.default);
-                    advance("format");
+                    // Use fresh format data directly to avoid stale-state skip of power_level
+                    const newHasPowerLevels = (f.powerLevels?.length ?? 0) > 0;
+                    const steps = ALL_STEPS.filter((s) => s !== "power_level" || newHasPowerLevels);
+                    const next = steps[steps.indexOf("format") + 1];
+                    if (next) setStep(next);
                   }}
                   className="flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all hover:shadow-sm cursor-pointer"
                   style={{
