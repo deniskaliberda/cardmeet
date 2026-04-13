@@ -12,6 +12,7 @@ import { ParticipantList } from "@/components/session/participant-list";
 import { getTCG, getPowerLevel } from "@/lib/config/tcg";
 import { TCGIcon } from "@/components/icons/tcg-icons";
 import { leaveSession, cancelSession, pauseSession, inviteToSession } from "@/app/(app)/sessions/actions";
+import { EditSessionForm } from "@/components/session/edit-session-form";
 import { FriendInviteGrid } from "@/components/session/friend-invite-grid";
 import { ReviewForm } from "@/components/review/review-form";
 import { toast } from "sonner";
@@ -193,6 +194,7 @@ export function MySessionsView({
             inviteSelected={inviteSelected}
             onInviteOpen={() => setInviteOpen((v) => !v)}
             onInviteChange={setInviteSelected}
+            onSessionUpdated={() => {}}
           />
 
           {/* Col 2: Participants */}
@@ -316,6 +318,7 @@ function SessionDetailColumn({
   inviteSelected,
   onInviteOpen,
   onInviteChange,
+  onSessionUpdated,
 }: {
   session: Session;
   isHost: boolean;
@@ -328,10 +331,12 @@ function SessionDetailColumn({
   inviteSelected: string[];
   onInviteOpen: () => void;
   onInviteChange: (ids: string[]) => void;
+  onSessionUpdated: (updated: Partial<Session>) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [invitePending, startInviteTransition] = useTransition();
+  const [editing, setEditing] = useState(false);
   const tcg = getTCG(session.tcg);
   const powerLevel =
     session.power_level != null
@@ -478,12 +483,31 @@ function SessionDetailColumn({
         </div>
       </div>
 
+      {/* Edit form (inline) */}
+      {editing && (
+        <div className="rounded-2xl border-2 border-primary/20 bg-primary/5 p-4">
+          <EditSessionForm
+            session={session}
+            onClose={() => setEditing(false)}
+            onSaved={(updated) => {
+              setEditing(false);
+              onSessionUpdated(updated);
+            }}
+          />
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex flex-col gap-1.5 mt-auto">
         {isHost && !isPast && (
           <>
-            <Button size="sm" className="w-full rounded-xl text-xs" disabled={pending}>
-              ✏️ Bearbeiten
+            <Button
+              size="sm"
+              className="w-full rounded-xl text-xs"
+              disabled={pending}
+              onClick={() => setEditing((v) => !v)}
+            >
+              ✏️ {editing ? "Abbrechen" : "Bearbeiten"}
             </Button>
             <Button
               size="sm"

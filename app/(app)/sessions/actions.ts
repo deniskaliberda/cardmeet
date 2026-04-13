@@ -208,3 +208,45 @@ export async function cancelSession(sessionId: string) {
   revalidatePath("/my-sessions");
   return { success: true };
 }
+
+export async function updateSession(
+  sessionId: string,
+  data: {
+    title: string;
+    description: string;
+    scheduled_at: string;
+    max_players: number;
+    location_name: string;
+    power_level: number | null;
+  }
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet" };
+
+  if (!data.title.trim() || data.title.length < 3)
+    return { error: "Titel muss mindestens 3 Zeichen haben" };
+  if (!data.scheduled_at)
+    return { error: "Datum fehlt" };
+  if (data.max_players < 2)
+    return { error: "Mindestens 2 Spieler" };
+
+  const { error } = await supabase
+    .from("sessions")
+    .update({
+      title: data.title.trim(),
+      description: data.description.trim() || null,
+      scheduled_at: data.scheduled_at,
+      max_players: data.max_players,
+      location_name: data.location_name.trim() || null,
+      power_level: data.power_level,
+    })
+    .eq("id", sessionId)
+    .eq("host_id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/my-sessions");
+  revalidatePath(`/sessions/${sessionId}`);
+  return { success: true };
+}
