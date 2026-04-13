@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { href: "/sessions", label: "🎴 Sessions" },
   { href: "/my-sessions", label: "📋 Meine Sessions" },
   { href: "/sessions/create", label: "➕ Erstellen" },
+  { href: "/friends", label: "👥 Freunde" },
   { href: "/profile", label: "👤 Profil" },
 ] as const;
 
