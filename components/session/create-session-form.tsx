@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { createSession } from "@/app/(app)/sessions/create/actions";
 import { toast } from "sonner";
-import { Check, ChevronLeft, ExternalLink, MapPin, Minus, Plus, Store, UserPlus } from "lucide-react";
+import { Check, ChevronLeft, MapPin, Minus, Plus, Store, UserPlus } from "lucide-react";
+import { ShopPickerMap } from "@/components/session/shop-picker-map";
 import { cn } from "@/lib/utils";
 
 type ShopOption = {
@@ -621,34 +622,57 @@ export function CreateSessionForm({
                       ändern
                     </button>
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-                    {shops
-                      .filter((s) => !tcgId || s.tcgs.length === 0 || s.tcgs.includes(tcgId))
-                      .map((shop) => (
-                        <button
-                          key={shop.id}
-                          type="button"
-                          onClick={() => selectShop(shop)}
-                          className="flex items-center gap-3 rounded-2xl border-2 border-border bg-card p-3.5 text-left hover:border-primary transition-colors cursor-pointer"
-                        >
-                          <Store className="h-5 w-5 shrink-0 text-primary" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold truncate">{shop.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {shop.district ? `${shop.district} · ` : ""}{shop.city}
-                            </p>
-                          </div>
-                          <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                        </button>
-                      ))}
-                    {shops.filter((s) => !tcgId || s.tcgs.length === 0 || s.tcgs.includes(tcgId)).length === 0 && (
-                      <p className="text-center text-sm text-muted-foreground py-4">
-                        Keine Spieleläden für dieses TCG gefunden.
-                      </p>
-                    )}
-                  </div>
-                )}
+                ) : (() => {
+                  const filteredShops = shops.filter(
+                    (s) => !tcgId || s.tcgs.length === 0 || s.tcgs.includes(tcgId)
+                  );
+                  return filteredShops.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-4">
+                      Keine Spieleläden für dieses TCG gefunden.
+                    </p>
+                  ) : (
+                    <>
+                      <ShopPickerMap
+                        shops={filteredShops}
+                        selectedShopId={selectedShopId}
+                        onSelect={(mapShop) => {
+                          const full = filteredShops.find((s) => s.id === mapShop.id);
+                          if (full) selectShop(full);
+                        }}
+                      />
+                      <div className="flex flex-col gap-2 max-h-52 overflow-y-auto">
+                        {filteredShops.map((shop) => (
+                          <button
+                            key={shop.id}
+                            type="button"
+                            onClick={() => selectShop(shop)}
+                            className={cn(
+                              "flex items-center gap-3 rounded-2xl border-2 p-3.5 text-left transition-colors cursor-pointer",
+                              selectedShopId === shop.id
+                                ? "border-primary bg-primary/5"
+                                : "border-border bg-card hover:border-primary/50"
+                            )}
+                          >
+                            <Store className={cn(
+                              "h-5 w-5 shrink-0",
+                              selectedShopId === shop.id ? "text-primary" : "text-muted-foreground"
+                            )} />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold truncate">{shop.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {shop.address}
+                                {shop.district ? ` · ${shop.district}` : ""}
+                              </p>
+                            </div>
+                            {selectedShopId === shop.id && (
+                              <Check className="h-4 w-4 text-primary shrink-0" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
