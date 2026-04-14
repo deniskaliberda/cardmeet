@@ -18,14 +18,15 @@ type CityResult = {
   address: { city?: string; town?: string; village?: string; state?: string };
 };
 
-// Top 4 TCGs in Deutschland nach Spielerzahl
-const TOP_TCGS = ["magic", "pokemon", "yugioh", "onepiece"] as const;
+// All supported TCGs
+const ALL_TCGS = ["magic", "pokemon", "yugioh", "onepiece", "lorcana"] as const;
 
 const TCG_ICONS: Record<string, string> = {
   magic: "M",
   pokemon: "PK",
   yugioh: "YGO",
   onepiece: "OP",
+  lorcana: "L",
 };
 
 const STEPS = ["Profil", "Standort", "Spiele"] as const;
@@ -350,26 +351,44 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
           {step === 3 && (
             <div className="flex flex-col gap-5 p-6">
               <div>
-                <h1 className="text-2xl font-semibold">Deine Spiele</h1>
+                <h1 className="text-2xl font-semibold">Was spielst du?</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Welche TCGs spielst du? Mehrfachauswahl möglich.
+                  Tippe zuerst auf dein <strong>Haupt-TCG</strong>, dann optional weitere.
                 </p>
               </div>
 
+              {/* Primary TCG hint */}
+              {selectedTcgs.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Haupt-TCG:{" "}
+                  <span className="font-semibold" style={{ color: TCG_LIST.find((t) => t.id === selectedTcgs[0])?.color }}>
+                    {TCG_LIST.find((t) => t.id === selectedTcgs[0])?.shortName}
+                  </span>
+                  {selectedTcgs.length > 1 && (
+                    <span> + {selectedTcgs.length - 1} weitere</span>
+                  )}
+                </p>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
-                {TOP_TCGS.map((tcgId) => {
+                {ALL_TCGS.map((tcgId) => {
                   const tcg = TCG_LIST.find((t) => t.id === tcgId)!;
                   const isSelected = selectedTcgs.includes(tcgId);
+                  const isPrimary = selectedTcgs[0] === tcgId;
                   return (
                     <button
                       key={tcgId}
                       type="button"
                       onClick={() => toggleTcg(tcgId)}
-                      className="relative flex flex-col items-center justify-center gap-2.5 rounded-2xl border-2 py-5 transition-all duration-200"
+                      className="relative flex flex-col items-center justify-center gap-2.5 rounded-2xl border-2 py-5 transition-all duration-200 cursor-pointer"
                       style={{
                         borderColor: isSelected ? tcg.color : "var(--border)",
                         background: isSelected ? `${tcg.color}12` : "var(--card)",
-                        boxShadow: isSelected ? `0 0 0 1px ${tcg.color}40` : "none",
+                        boxShadow: isPrimary
+                          ? `0 0 0 2px ${tcg.color}60, 0 4px 16px ${tcg.color}20`
+                          : isSelected
+                          ? `0 0 0 1px ${tcg.color}40`
+                          : "none",
                       }}
                     >
                       {isSelected && (
@@ -377,12 +396,19 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
                           className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full"
                           style={{ background: tcg.color }}
                         >
-                          <Check className="h-3 w-3 text-white" />
+                          {isPrimary ? (
+                            <span className="text-[9px] font-bold text-white">1</span>
+                          ) : (
+                            <Check className="h-3 w-3 text-white" />
+                          )}
                         </div>
                       )}
                       <div
-                        className="flex h-12 w-12 items-center justify-center rounded-xl text-sm font-bold text-white"
-                        style={{ background: tcg.color }}
+                        className="flex h-12 w-12 items-center justify-center rounded-xl text-sm font-bold text-white transition-transform"
+                        style={{
+                          background: tcg.color,
+                          transform: isPrimary ? "scale(1.1)" : "scale(1)",
+                        }}
                       >
                         {TCG_ICONS[tcgId]}
                       </div>

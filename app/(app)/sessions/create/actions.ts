@@ -35,6 +35,8 @@ export async function createSession(formData: FormData) {
     return { error: "Nicht angemeldet" };
   }
 
+  const shopId = (formData.get("shop_id") as string) || null;
+
   const { data: session, error } = await supabase
     .from("sessions")
     .insert({
@@ -50,6 +52,7 @@ export async function createSession(formData: FormData) {
       postal_code: postalCode,
       location: `SRID=4326;POINT(${parsed.data.lng} ${parsed.data.lat})`,
       scheduled_at: parsed.data.scheduled_at,
+      shop_id: shopId,
     })
     .select("id")
     .single();

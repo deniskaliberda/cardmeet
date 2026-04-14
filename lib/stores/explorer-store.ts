@@ -12,6 +12,7 @@ type ExplorerStore = {
   dateFilter: DateFilter;
   /** Minutes from midnight, e.g. 840 = 14:00. null = no filter. */
   fromMinutes: number | null;
+  shopOnly: boolean;
   setSelected: (id: string | null) => void;
   setHovered: (id: string | null) => void;
   setTcgFilter: (tcg: string | null) => void;
@@ -20,6 +21,7 @@ type ExplorerStore = {
   setSearchQuery: (q: string) => void;
   setDateFilter: (f: DateFilter) => void;
   setFromMinutes: (m: number | null) => void;
+  toggleShopOnly: () => void;
 };
 
 export const useExplorerStore = create<ExplorerStore>((set) => ({
@@ -31,6 +33,7 @@ export const useExplorerStore = create<ExplorerStore>((set) => ({
   searchQuery: "",
   dateFilter: "all",
   fromMinutes: null,
+  shopOnly: false,
   setSelected: (id) => set({ selectedSessionId: id }),
   setHovered: (id) => set({ hoveredSessionId: id }),
   setTcgFilter: (tcg) => set({ activeTcg: tcg, activeFormat: null, activePowerLevel: null }),
@@ -39,4 +42,5 @@ export const useExplorerStore = create<ExplorerStore>((set) => ({
   setSearchQuery: (q) => set({ searchQuery: q }),
   setDateFilter: (f) => set({ dateFilter: f }),
   setFromMinutes: (m) => set({ fromMinutes: m }),
+  toggleShopOnly: () => set((s) => ({ shopOnly: !s.shopOnly })),
 }));

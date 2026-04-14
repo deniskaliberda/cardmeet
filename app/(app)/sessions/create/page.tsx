@@ -3,7 +3,12 @@ import { CreateSessionForm } from "@/components/session/create-session-form";
 
 export const metadata = { title: "Session erstellen" };
 
-export default async function CreateSessionPage() {
+export default async function CreateSessionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ shop?: string }>;
+}) {
+  const { shop: shopSlug } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -33,21 +38,23 @@ export default async function CreateSessionPage() {
       .filter((f) => f.user_id);
   }
 
-  // Load registered LGS venues
-  const { data: lgsRaw } = await supabase
-    .from("profiles")
-    .select("id, venue_name, city, city_lat, city_lng, venue_website")
-    .eq("is_venue", true)
-    .not("venue_name", "is", null)
-    .order("venue_name");
+  // Load shops for the location picker
+  const { data: shopsData } = await supabase
+    .from("shops")
+    .select("id, slug, name, address, city, district, tcgs, location")
+    .eq("has_play_space", true)
+    .order("name");
 
-  const lgsVenues = (lgsRaw ?? []).map((v) => ({
-    id: v.id as string,
-    venue_name: v.venue_name as string | null,
-    city: v.city as string | null,
-    city_lat: v.city_lat as number | null,
-    city_lng: v.city_lng as number | null,
-    venue_website: v.venue_website as string | null,
+  const shopOptions = (shopsData ?? []).map((s: any) => ({
+    id: s.id,
+    slug: s.slug,
+    name: s.name,
+    address: s.address,
+    city: s.city,
+    district: s.district,
+    tcgs: s.tcgs ?? [],
+    lat: s.location ? (s.location as any).coordinates?.[1] ?? 52.52 : 52.52,
+    lng: s.location ? (s.location as any).coordinates?.[0] ?? 13.405 : 13.405,
   }));
 
   return (
@@ -58,7 +65,11 @@ export default async function CreateSessionPage() {
           Erstelle eine Spielrunde und finde Mitspieler
         </p>
       </div>
-      <CreateSessionForm friends={friends} lgsVenues={lgsVenues} />
+      <CreateSessionForm
+        friends={friends}
+        shops={shopOptions}
+        preselectedShopSlug={shopSlug}
+      />
     </div>
   );
 }

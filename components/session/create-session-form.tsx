@@ -8,19 +8,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { createSession } from "@/app/(app)/sessions/create/actions";
 import { toast } from "sonner";
-import { Check, ChevronLeft, ExternalLink, MapPin, Minus, Plus, UserPlus } from "lucide-react";
+import { Check, ChevronLeft, ExternalLink, MapPin, Minus, Plus, Store, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type LgsVenue = {
+type ShopOption = {
   id: string;
-  venue_name: string | null;
-  city: string | null;
-  city_lat: number | null;
-  city_lng: number | null;
-  venue_website: string | null;
+  slug: string;
+  name: string;
+  address: string;
+  city: string;
+  district: string | null;
+  tcgs: string[];
+  lat: number;
+  lng: number;
 };
 
-type LocationMode = "city" | "address" | "lgs";
+type LocationMode = "city" | "address" | "shop";
 
 type StepId =
   | "tcg"
@@ -59,10 +62,12 @@ type Friend = {
 
 export function CreateSessionForm({
   friends = [],
-  lgsVenues = [],
+  shops = [],
+  preselectedShopSlug,
 }: {
   friends?: Friend[];
-  lgsVenues?: LgsVenue[];
+  shops?: ShopOption[];
+  preselectedShopSlug?: string;
 }) {
   const [step, setStep] = useState<StepId>("tcg");
   const [tcgId, setTcgId] = useState("");
@@ -73,10 +78,24 @@ export function CreateSessionForm({
   const [description, setDescription] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [locationName, setLocationName] = useState("");
+  const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
 
   const [invitedFriendIds, setInvitedFriendIds] = useState<string[]>([]);
 
   const [locationMode, setLocationMode] = useState<LocationMode>("city");
+
+  // Pre-select shop from URL param
+  useEffect(() => {
+    if (preselectedShopSlug && shops.length > 0) {
+      const shop = shops.find((s) => s.slug === preselectedShopSlug);
+      if (shop) {
+        selectShop(shop);
+        setLocationMode("shop");
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectedShopSlug, shops]);
+
   const [locationQuery, setLocationQuery] = useState("");
   const [locationResults, setLocationResults] = useState<NominatimResult[]>([]);
   const [resolvedLat, setResolvedLat] = useState("52.52");
@@ -85,7 +104,6 @@ export function CreateSessionForm({
   const [resolvedPostalCode, setResolvedPostalCode] = useState("");
   const [locationLabel, setLocationLabel] = useState("");
   const [showResults, setShowResults] = useState(false);
-  const [selectedLgs, setSelectedLgs] = useState<LgsVenue | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -114,22 +132,22 @@ export function CreateSessionForm({
     setLocationQuery("");
     setLocationResults([]);
     setShowResults(false);
-    setSelectedLgs(null);
+    setSelectedShopId(null);
   }
 
-  function selectLgs(venue: LgsVenue) {
-    setSelectedLgs(venue);
-    setResolvedLat(String(venue.city_lat ?? "52.52"));
-    setResolvedLng(String(venue.city_lng ?? "13.405"));
-    setResolvedCity(venue.city ?? "");
+  function selectShop(shop: ShopOption) {
+    setSelectedShopId(shop.id);
+    setResolvedLat(String(shop.lat));
+    setResolvedLng(String(shop.lng));
+    setResolvedCity(shop.city);
     setResolvedPostalCode("");
-    setLocationLabel(venue.venue_name ?? venue.city ?? "");
-    setLocationName(venue.venue_name ?? "");
+    setLocationLabel(shop.name);
+    setLocationName(shop.name);
   }
 
   function resetLocation() {
     setLocationLabel("");
-    setSelectedLgs(null);
+    setSelectedShopId(null);
     setResolvedCity("");
     setResolvedPostalCode("");
     setResolvedLat("52.52");
@@ -176,6 +194,7 @@ export function CreateSessionForm({
     formData.set("city", resolvedCity || "Berlin");
     formData.set("postal_code", resolvedPostalCode);
     formData.set("location_name", locationName);
+    if (selectedShopId) formData.set("shop_id", selectedShopId);
     if (invitedFriendIds.length > 0) {
       formData.set("invited_friend_ids", invitedFriendIds.join(","));
     }
@@ -553,13 +572,15 @@ export function CreateSessionForm({
             />
 
             {/* Mode selector */}
-            <div className="grid gap-2"
-              style={{ gridTemplateColumns: lgsVenues.length > 0 ? "1fr 1fr 1fr" : "1fr 1fr" }}>
-              {(["city", "address", ...(lgsVenues.length > 0 ? ["lgs"] : [])] as LocationMode[]).map((mode) => {
-                const labels: Record<LocationMode, { icon: string; label: string; sub: string }> = {
-                  city:    { icon: "🗺️", label: "Grober Ort",    sub: "Stadt / Viertel" },
-                  address: { icon: "📍", label: "Adresse",        sub: "Straße & Hausnr." },
-                  lgs:     { icon: "🏪", label: "Spielladen",     sub: `${lgsVenues.length} in der Nähe` },
+            <div
+              className="grid gap-2"
+              style={{ gridTemplateColumns: shops.length > 0 ? "1fr 1fr 1fr" : "1fr 1fr" }}
+            >
+              {(["city", "address", ...(shops.length > 0 ? ["shop"] : [])] as LocationMode[]).map((mode) => {
+                const labels: Record<LocationMode, { icon: React.ReactNode; label: string; sub: string }> = {
+                  city:    { icon: "🗺️", label: "Grober Ort",  sub: "Stadt / Viertel" },
+                  address: { icon: "📍", label: "Adresse",      sub: "Straße & Hausnr." },
+                  shop:    { icon: <Store className="h-5 w-5" />, label: "Spielladen", sub: `${shops.length} verfügbar` },
                 };
                 const m = labels[mode];
                 return (
@@ -574,7 +595,7 @@ export function CreateSessionForm({
                         : "border-border text-muted-foreground hover:border-primary/40"
                     )}
                   >
-                    <span className="text-xl">{m.icon}</span>
+                    <span className="text-xl flex items-center justify-center">{m.icon}</span>
                     <span className="text-xs font-semibold">{m.label}</span>
                     <span className="text-[10px] opacity-70">{m.sub}</span>
                   </button>
@@ -582,46 +603,50 @@ export function CreateSessionForm({
               })}
             </div>
 
-            {/* ── LGS picker ── */}
-            {locationMode === "lgs" && (
+            {/* ── Shop picker ── */}
+            {locationMode === "shop" && (
               <div className="space-y-3">
-                {selectedLgs ? (
+                {locationLabel ? (
                   <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
-                    <span className="text-2xl shrink-0">🏪</span>
+                    <Store className="h-5 w-5 shrink-0 text-primary" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate">{selectedLgs.venue_name}</p>
-                      <p className="text-xs text-muted-foreground">{selectedLgs.city}</p>
-                      {selectedLgs.venue_website && (
-                        <a href={selectedLgs.venue_website} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-0.5">
-                          Website <ExternalLink className="h-2.5 w-2.5" />
-                        </a>
-                      )}
+                      <p className="text-sm font-semibold truncate">{locationLabel}</p>
+                      <p className="text-xs text-muted-foreground">{resolvedCity}</p>
                     </div>
-                    <button type="button" onClick={resetLocation}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                    <button
+                      type="button"
+                      onClick={resetLocation}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    >
                       ändern
                     </button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-                    {lgsVenues.map((venue) => (
-                      <button
-                        key={venue.id}
-                        type="button"
-                        onClick={() => selectLgs(venue)}
-                        className="flex items-center gap-3 rounded-2xl border-2 border-border bg-card p-3.5 text-left hover:border-primary transition-colors cursor-pointer"
-                      >
-                        <span className="text-2xl shrink-0">🏪</span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold truncate">
-                            {venue.venue_name ?? "Unbekannter Laden"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{venue.city}</p>
-                        </div>
-                        <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                      </button>
-                    ))}
+                    {shops
+                      .filter((s) => !tcgId || s.tcgs.length === 0 || s.tcgs.includes(tcgId))
+                      .map((shop) => (
+                        <button
+                          key={shop.id}
+                          type="button"
+                          onClick={() => selectShop(shop)}
+                          className="flex items-center gap-3 rounded-2xl border-2 border-border bg-card p-3.5 text-left hover:border-primary transition-colors cursor-pointer"
+                        >
+                          <Store className="h-5 w-5 shrink-0 text-primary" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold truncate">{shop.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {shop.district ? `${shop.district} · ` : ""}{shop.city}
+                            </p>
+                          </div>
+                          <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </button>
+                      ))}
+                    {shops.filter((s) => !tcgId || s.tcgs.length === 0 || s.tcgs.includes(tcgId)).length === 0 && (
+                      <p className="text-center text-sm text-muted-foreground py-4">
+                        Keine Spieleläden für dieses TCG gefunden.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -672,8 +697,11 @@ export function CreateSessionForm({
                         </p>
                       )}
                     </div>
-                    <button type="button" onClick={resetLocation}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <button
+                      type="button"
+                      onClick={resetLocation}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
                       ändern
                     </button>
                   </div>
