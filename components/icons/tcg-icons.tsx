@@ -115,3 +115,44 @@ export function TCGIcon({ tcgId, ...props }: IconProps & { tcgId: string }) {
   if (!Icon) return null;
   return <Icon {...props} />;
 }
+
+// PNG icon paths for richer display (generated custom icons, not official logos)
+const TCG_PNG_MAP: Record<string, string> = {
+  magic: "/icons/tcg/magic.png",
+  pokemon: "/icons/tcg/pokemon.png",
+  yugioh: "/icons/tcg/yugioh.png",
+  lorcana: "/icons/tcg/lorcana.png",
+  onepiece: "/icons/tcg/onepiece.png",
+};
+
+/**
+ * Rich PNG icon for larger displays (onboarding, TCG selection, home shortcuts).
+ * Falls back to SVG TCGIcon if no PNG exists for the given TCG.
+ */
+export function TCGImage({
+  tcgId,
+  size = 64,
+  className,
+  color,
+}: {
+  tcgId: string;
+  size?: number;
+  className?: string;
+  color?: string;
+}) {
+  const src = TCG_PNG_MAP[tcgId];
+  if (!src) {
+    return <TCGIcon tcgId={tcgId} className={className ?? `h-${size / 4} w-${size / 4}`} color={color} />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={tcgId}
+      width={size}
+      height={size}
+      className={className}
+      style={{ objectFit: "contain" }}
+    />
+  );
+}

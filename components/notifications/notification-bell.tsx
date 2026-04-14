@@ -134,7 +134,7 @@ export function NotificationBell({ userId }: { userId: string }) {
                           {n.body}
                         </div>
                       )}
-                      <div className="text-[10px] text-muted-foreground mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         {formatTime(n.created_at)}
                       </div>
                     </>

@@ -184,7 +184,7 @@ function ShopSessionCard({ session }: { session: Session }) {
         <p className="truncate text-sm font-medium text-foreground group-hover:text-primary transition-colors">
           {session.title}
         </p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           <span>
             {tcg?.shortName} · {session.format}
           </span>
@@ -203,7 +203,7 @@ function ShopSessionCard({ session }: { session: Session }) {
       {/* Slots */}
       <Badge
         variant="outline"
-        className={`shrink-0 text-[10px] ${slotsColor} border-current/20`}
+        className={`shrink-0 text-xs ${slotsColor} border-current/20`}
       >
         {session.current_players}/{session.max_players}
       </Badge>

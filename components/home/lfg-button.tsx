@@ -81,7 +81,7 @@ export function LfgButton({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {hasActive
                   ? `${activeLfgCount} aktive${activeLfgCount > 1 ? "" : ""} Suche${activeLfgCount > 1 ? "n" : ""} — tippe zum Verwalten`
                   : "Spieler in deiner Nähe finden"}

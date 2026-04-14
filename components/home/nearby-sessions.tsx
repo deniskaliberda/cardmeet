@@ -72,7 +72,7 @@ export function NearbySessions({
             <Link
               key={session.id}
               href={`/sessions/${session.id}`}
-              className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5 transition-colors hover:bg-accent/50"
+              className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5 transition-colors hover:bg-accent/80"
             >
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex items-center gap-2">

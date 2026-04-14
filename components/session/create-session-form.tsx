@@ -9,6 +9,7 @@ import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { createSession } from "@/app/(app)/sessions/create/actions";
 import { toast } from "sonner";
 import { Check, ChevronLeft, MapPin, Minus, Plus, Store, UserPlus } from "lucide-react";
+import { TCGImage } from "@/components/icons/tcg-icons";
 import { ShopPickerMap } from "@/components/session/shop-picker-map";
 import { cn } from "@/lib/utils";
 
@@ -249,13 +250,13 @@ export function CreateSessionForm({
                     setPowerLevel("");
                     advance("tcg");
                   }}
-                  className="relative flex flex-col items-start gap-2 rounded-2xl border-2 p-4 text-left transition-all hover:shadow-md cursor-pointer"
+                  className="relative flex flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center transition-all hover:shadow-md cursor-pointer"
                   style={{
                     borderColor: tcgId === t.id ? t.color : "var(--border)",
-                    background: tcgId === t.id ? `${t.color}10` : "var(--card)",
+                    background: tcgId === t.id ? `${t.color}18` : "var(--card)",
                   }}
                 >
-                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: t.color }} />
+                  <TCGImage tcgId={t.id} size={48} className="rounded-lg" />
                   <span className="text-sm font-semibold leading-tight">{t.shortName}</span>
                   {tcgId === t.id && (
                     <Check className="absolute right-2.5 top-2.5 h-3.5 w-3.5" style={{ color: t.color }} />
@@ -272,7 +273,7 @@ export function CreateSessionForm({
             <div>
               <span
                 className="mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
-                style={{ background: `${tcg.color}15`, color: tcg.color }}
+                style={{ background: `${tcg.color}20`, color: tcg.color }}
               >
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tcg.color }} />
                 {tcg.shortName}
@@ -297,7 +298,7 @@ export function CreateSessionForm({
                   className="flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all hover:shadow-sm cursor-pointer"
                   style={{
                     borderColor: formatId === f.id ? tcg.color : "var(--border)",
-                    background: formatId === f.id ? `${tcg.color}08` : "var(--card)",
+                    background: formatId === f.id ? `${tcg.color}15` : "var(--card)",
                   }}
                 >
                   <div className="flex-1">
@@ -334,7 +335,7 @@ export function CreateSessionForm({
                   className="flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all hover:shadow-sm cursor-pointer"
                   style={{
                     borderColor: powerLevel === String(pl.level) ? pl.color : "var(--border)",
-                    background: powerLevel === String(pl.level) ? `${pl.color}08` : "var(--card)",
+                    background: powerLevel === String(pl.level) ? `${pl.color}15` : "var(--card)",
                   }}
                 >
                   <div
@@ -437,7 +438,7 @@ export function CreateSessionForm({
                               : "border-border bg-card text-foreground hover:border-primary/50"
                           )}
                         >
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
                             {friend.username.slice(0, 2).toUpperCase()}
                           </span>
                           {friend.username}
@@ -592,13 +593,13 @@ export function CreateSessionForm({
                     className={cn(
                       "flex flex-col items-center gap-1 rounded-2xl border-2 p-3 text-center transition-all cursor-pointer",
                       locationMode === mode
-                        ? "border-primary bg-primary/8 text-primary"
+                        ? "border-primary bg-primary/15 text-primary"
                         : "border-border text-muted-foreground hover:border-primary/40"
                     )}
                   >
                     <span className="text-xl flex items-center justify-center">{m.icon}</span>
                     <span className="text-xs font-semibold">{m.label}</span>
-                    <span className="text-[10px] opacity-70">{m.sub}</span>
+                    <span className="text-xs opacity-80">{m.sub}</span>
                   </button>
                 );
               })}
@@ -608,7 +609,7 @@ export function CreateSessionForm({
             {locationMode === "shop" && (
               <div className="space-y-3">
                 {locationLabel ? (
-                  <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
+                  <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/15 p-4">
                     <Store className="h-5 w-5 shrink-0 text-primary" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold truncate">{locationLabel}</p>
@@ -649,7 +650,7 @@ export function CreateSessionForm({
                             className={cn(
                               "flex items-center gap-3 rounded-2xl border-2 p-3.5 text-left transition-colors cursor-pointer",
                               selectedShopId === shop.id
-                                ? "border-primary bg-primary/5"
+                                ? "border-primary bg-primary/15"
                                 : "border-border bg-card hover:border-primary/50"
                             )}
                           >
@@ -699,7 +700,7 @@ export function CreateSessionForm({
                           <button
                             key={r.place_id}
                             type="button"
-                            className="flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-muted/60"
+                            className="flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-muted"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => selectLocation(r)}
                           >
@@ -711,7 +712,7 @@ export function CreateSessionForm({
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
+                  <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/15 p-4">
                     <MapPin className="h-5 w-5 shrink-0 text-primary" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{locationLabel}</p>

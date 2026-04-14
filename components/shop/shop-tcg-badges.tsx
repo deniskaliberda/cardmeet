@@ -11,7 +11,7 @@ export function ShopTcgBadges({ tcgs }: { tcgs: string[] }) {
         return (
           <span
             key={tcgId}
-            className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight"
+            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold leading-tight"
             style={{
               backgroundColor: `${tcg.color}20`,
               color: tcg.color,

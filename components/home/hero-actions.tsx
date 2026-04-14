@@ -6,7 +6,7 @@ export function HeroActions({ openSessionCount }: { openSessionCount: number }) 
     <div className="grid grid-cols-2 gap-3">
       <Link
         href="/sessions"
-        className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-4 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+        className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/10 p-4 transition-transform hover:scale-[1.02] active:scale-[0.98]"
       >
         <Search className="h-7 w-7 text-primary" />
         <div>
@@ -21,7 +21,7 @@ export function HeroActions({ openSessionCount }: { openSessionCount: number }) 
 
       <Link
         href="/sessions/create"
-        className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/10 p-4 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+        className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 to-accent/15 p-4 transition-transform hover:scale-[1.02] active:scale-[0.98]"
       >
         <Plus className="h-7 w-7 text-primary" />
         <div>

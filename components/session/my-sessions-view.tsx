@@ -262,7 +262,7 @@ function SidebarItem({
       className={cn(
         "flex items-center gap-2.5 rounded-[10px] p-2.5 text-left transition-all cursor-pointer",
         isSelected
-          ? "bg-primary/8 border-2 border-primary"
+          ? "bg-primary/15 border-2 border-primary"
           : "bg-card border-2 border-transparent hover:bg-[var(--surface-container-low)]",
         "shadow-[0_1px_3px_oklch(0.224_0.018_275.1/5%)]"
       )}
@@ -292,7 +292,7 @@ function SidebarItem({
       <div className="shrink-0 text-right">
         <div
           className={cn(
-            "text-[10px] font-medium whitespace-nowrap",
+            "text-xs font-medium whitespace-nowrap",
             isToday && "text-primary",
             isHost && "text-[#006b5c]",
             !isToday && !isHost && "text-primary"
@@ -300,7 +300,7 @@ function SidebarItem({
         >
           {isToday ? "● Heute" : isHost ? "🏠 Host" : "Angemeldet"}
         </div>
-        <div className="text-[10px] text-muted-foreground">
+        <div className="text-xs text-muted-foreground">
           {session.current_players}/{session.max_players}
         </div>
       </div>
@@ -509,7 +509,7 @@ function SessionDetailColumn({
 
       {/* Edit form (inline) */}
       {editing && (
-        <div className="rounded-2xl border-2 border-primary/20 bg-primary/5 p-4">
+        <div className="rounded-2xl border-2 border-primary/20 bg-primary/15 p-4">
           <EditSessionForm
             session={session}
             onClose={() => setEditing(false)}
@@ -543,7 +543,7 @@ function SessionDetailColumn({
               👥 Freunde einladen
             </Button>
             {inviteOpen && (
-              <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-3 space-y-2">
+              <div className="rounded-xl border-2 border-primary/20 bg-primary/15 p-3 space-y-2">
                 <FriendInviteGrid
                   friends={friends}
                   selected={inviteSelected}

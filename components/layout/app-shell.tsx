@@ -104,7 +104,7 @@ export function AppShell({
             <DmPanel userId={user.id} />
             <NotificationBell userId={user.id} />
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white transition-all hover:shadow-[0_0_12px_oklch(0.5_0.2_264/30%)] focus:outline-none">
+              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white transition-all hover:shadow-[0_0_12px_oklch(0.5_0.2_264/30%)] focus:outline-none">
                 {user.username.slice(0, 2).toUpperCase()}
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -140,10 +140,10 @@ export function AppShell({
 
       {/* Mobile Bottom Nav — icon only, 4 items */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-xl md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card backdrop-blur-xl md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div className="flex items-center justify-around py-2">
+        <div className="flex items-center justify-around py-2.5">
           {MOBILE_NAV.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
@@ -151,11 +151,11 @@ export function AppShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex flex-col items-center gap-1 p-2 transition-colors active:scale-95"
+                className="flex flex-col items-center gap-1 p-2.5 transition-colors active:scale-95"
               >
                 <Icon
                   className={cn(
-                    "h-5 w-5 transition-colors",
+                    "h-6 w-6 transition-colors",
                     isActive ? "text-primary" : "text-muted-foreground"
                   )}
                 />

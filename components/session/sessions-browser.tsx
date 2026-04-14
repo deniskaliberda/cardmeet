@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Calendar, MapPin, Users, Search, Star, Clock, Zap, Target } from "lucide-react";
 import { TCG_LIST, getTCG, getPowerLevel } from "@/lib/config/tcg";
-import { TCGIcon } from "@/components/icons/tcg-icons";
+import { TCGIcon, TCGImage } from "@/components/icons/tcg-icons";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { JoinButton } from "@/components/session/join-button";
 import { ActiveAlertsBar } from "@/components/alerts/active-alerts-bar";
@@ -120,7 +120,7 @@ export function SessionsBrowser({
             "rounded-full px-4 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
             !activeTcg
               ? "bg-primary text-white"
-              : "bg-[var(--surface-container-low)] text-muted-foreground hover:text-primary hover:bg-primary/5"
+              : "bg-[var(--surface-container-low)] text-muted-foreground hover:text-primary hover:bg-primary/15"
           )}
         >
           Alle
@@ -135,7 +135,7 @@ export function SessionsBrowser({
                 "rounded-full px-4 py-1.5 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5",
                 isActive
                   ? "bg-primary text-white"
-                  : "bg-[var(--surface-container-low)] text-muted-foreground hover:text-primary hover:bg-primary/5"
+                  : "bg-[var(--surface-container-low)] text-muted-foreground hover:text-primary hover:bg-primary/15"
               )}
             >
               <TCGIcon tcgId={tcg.id} className="h-3 w-3" color={isActive ? "white" : "currentColor"} />
@@ -158,15 +158,8 @@ export function SessionsBrowser({
                 href={`/sessions/${s.id}`}
                 className="flex items-center gap-3 rounded-xl bg-card px-4 py-3 shadow-[0_2px_8px_oklch(0.224_0.018_275.1/8%),0_0_0_1px_oklch(0.829_0.026_275.8/10%)] tonal-transition hover:shadow-[0_4px_16px_oklch(0.224_0.018_275.1/12%)] flex-1 min-w-[240px]"
               >
-                <div
-                  className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{
-                    background: tcg?.color
-                      ? `linear-gradient(135deg, ${tcg.color}, ${tcg.color}88)`
-                      : "var(--primary)",
-                  }}
-                >
-                  <TCGIcon tcgId={s.tcg} className="h-5 w-5" color="white" />
+                <div className="shrink-0 w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-black/30">
+                  <TCGImage tcgId={s.tcg} size={40} className="rounded-lg" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{s.title}</div>
@@ -177,7 +170,7 @@ export function SessionsBrowser({
                   </div>
                 </div>
                 {isToday && (
-                  <span className="shrink-0 rounded-full bg-primary/15 text-primary px-2.5 py-0.5 text-[10px] font-semibold animate-pulse">
+                  <span className="shrink-0 rounded-full bg-primary/20 text-primary px-2.5 py-0.5 text-xs font-semibold animate-pulse">
                     Heute
                   </span>
                 )}
@@ -259,7 +252,7 @@ export function SessionsBrowser({
                     <button
                       key={tcg.id}
                       onClick={() => setFilter("tcg", tcg.id)}
-                      className="flex items-center gap-1.5 rounded-full bg-[var(--surface-container-low)] px-3 py-1.5 text-xs text-muted-foreground tonal-transition hover:text-primary hover:bg-primary/5 cursor-pointer"
+                      className="flex items-center gap-1.5 rounded-full bg-[var(--surface-container-low)] px-3 py-1.5 text-xs text-muted-foreground tonal-transition hover:text-primary hover:bg-primary/15 cursor-pointer"
                     >
                       <TCGIcon tcgId={tcg.id} className="h-3 w-3" color="currentColor" />
                       {tcg.shortName}
@@ -289,10 +282,10 @@ export function SessionsBrowser({
               Karte: {sessions.length} Sessions in deiner Naehe
             </div>
             <div className="flex gap-2">
-              <button className="rounded-lg bg-[var(--surface-container-low)] px-3.5 py-1.5 text-xs font-medium tonal-transition hover:bg-primary/5 hover:text-primary cursor-pointer">
+              <button className="rounded-lg bg-[var(--surface-container-low)] px-3.5 py-1.5 text-xs font-medium tonal-transition hover:bg-primary/15 hover:text-primary cursor-pointer">
                 Mein Standort
               </button>
-              <button className="rounded-lg bg-[var(--surface-container-low)] px-3.5 py-1.5 text-xs font-medium tonal-transition hover:bg-primary/5 hover:text-primary cursor-pointer">
+              <button className="rounded-lg bg-[var(--surface-container-low)] px-3.5 py-1.5 text-xs font-medium tonal-transition hover:bg-primary/15 hover:text-primary cursor-pointer">
                 Zoom
               </button>
             </div>
@@ -342,9 +335,9 @@ function BrowserSessionCard({
             <span
               className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium mt-1"
               style={{
-                backgroundColor: tcg?.color ? `${tcg.color}15` : undefined,
+                backgroundColor: tcg?.color ? `${tcg.color}20` : undefined,
                 color: tcg?.color,
-                border: tcg?.color ? `1px solid ${tcg.color}30` : undefined,
+                border: tcg?.color ? `1px solid ${tcg.color}40` : undefined,
               }}
             >
               <TCGIcon tcgId={session.tcg} className="h-3 w-3" color={tcg?.color} />
@@ -353,7 +346,7 @@ function BrowserSessionCard({
           </div>
           {powerLevel && (
             <div
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
               style={{ backgroundColor: powerLevel.color }}
               title={`${powerLevel.name}: ${powerLevel.description}`}
             >
@@ -402,8 +395,8 @@ function BrowserSessionCard({
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-medium">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-medium">
                   {(session.profiles?.username ?? "?").slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -412,7 +405,7 @@ function BrowserSessionCard({
                   {session.profiles?.username ?? "Unbekannt"}
                 </span>
                 {session.profiles?.avg_rating != null && (
-                  <span className="flex items-center gap-0.5 text-[10px] text-amber-500 font-medium">
+                  <span className="flex items-center gap-0.5 text-xs text-amber-500 font-medium">
                     <Star className="h-2.5 w-2.5 fill-current" />
                     {session.profiles.avg_rating}
                   </span>

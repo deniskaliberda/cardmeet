@@ -275,7 +275,7 @@ function DmPanelInner({ userId }: { userId: string }) {
                     <span className={cn("text-sm truncate", conv.unreadCount > 0 ? "font-semibold" : "font-medium")}>
                       {conv.partner.username}
                     </span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(conv.lastMessage.created_at), { locale: de, addSuffix: false })}
                     </span>
                   </div>
@@ -313,7 +313,7 @@ function DmPanelInner({ userId }: { userId: string }) {
                       )}
                     >
                       <p className="leading-snug">{msg.content}</p>
-                      <p className={cn("mt-0.5 text-[10px]", isOwn ? "text-primary-foreground/60 text-right" : "text-muted-foreground")}>
+                      <p className={cn("mt-0.5 text-[11px]", isOwn ? "text-primary-foreground/60 text-right" : "text-muted-foreground")}>
                         {format(new Date(msg.created_at), "HH:mm")}
                       </p>
                     </div>

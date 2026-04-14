@@ -28,7 +28,7 @@ export function ActiveAlertsBar({ alerts }: { alerts: Alert[] }) {
         return (
           <div
             key={alert.id}
-            className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-muted-foreground bg-primary/8 border border-primary/25 cursor-pointer tonal-transition hover:border-primary hover:text-foreground"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-muted-foreground bg-primary/15 border border-primary/30 cursor-pointer tonal-transition hover:border-primary hover:text-foreground"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[#006b5c] animate-pulse shrink-0" />
             {tcg?.shortName ?? alert.tcg}

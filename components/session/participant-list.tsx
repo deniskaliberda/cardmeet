@@ -115,7 +115,7 @@ function ParticipantRow({
         <Avatar className="h-8 w-8">
           <AvatarFallback
             className={cn(
-              "text-[10px] font-medium",
+              "text-xs font-medium",
               isCurrentUser
                 ? "bg-primary text-white border-2 border-primary"
                 : "bg-primary text-white"
@@ -132,12 +132,12 @@ function ParticipantRow({
         <div className="text-xs font-semibold truncate">
           {isCurrentUser ? "Du" : username}
         </div>
-        <div className="text-[10px] text-muted-foreground">⭐ 4.5</div>
+        <div className="text-xs text-muted-foreground">⭐ 4.5</div>
       </div>
 
       {/* Host badge */}
       {isHost && (
-        <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-medium shrink-0">
+        <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-medium shrink-0">
           HOST
         </span>
       )}
@@ -149,7 +149,7 @@ function ParticipantRow({
       className={cn(
         "flex items-center gap-2 rounded-lg p-2",
         isCurrentUser
-          ? "bg-primary/8 border-2 border-primary/30"
+          ? "bg-primary/15 border-2 border-primary/30"
           : "bg-[var(--surface-container-low)]"
       )}
     >
@@ -172,7 +172,7 @@ function ParticipantRow({
         <button
           onClick={handleRemove}
           disabled={pending}
-          className="text-[10px] px-1.5 py-0.5 border border-destructive rounded-md text-destructive cursor-pointer hover:bg-destructive/10 shrink-0 disabled:opacity-50"
+          className="text-xs px-1.5 py-0.5 border border-destructive rounded-md text-destructive cursor-pointer hover:bg-destructive/10 shrink-0 disabled:opacity-50"
         >
           <X className="h-3 w-3" />
         </button>

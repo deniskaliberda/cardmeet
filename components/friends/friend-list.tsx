@@ -147,7 +147,7 @@ function PendingRequestCard({ request }: { request: Friend }) {
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-primary/5 border-2 border-primary/20 p-3">
+    <div className="flex items-center gap-3 rounded-xl bg-primary/15 border-2 border-primary/25 p-3">
       <Avatar className="h-9 w-9">
         <AvatarFallback className="bg-primary text-white text-xs font-medium">
           {request.username.slice(0, 2).toUpperCase()}

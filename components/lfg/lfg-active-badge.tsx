@@ -45,10 +45,10 @@ function LfgPostBadge({ post }: { post: LfgPost }) {
 
   return (
     <div
-      className="flex items-center gap-3 rounded-xl border p-3 backdrop-blur-sm"
+      className="flex items-center gap-3 rounded-xl border p-3.5 backdrop-blur-sm"
       style={{
-        borderColor: `${tcg?.color ?? "#666"}40`,
-        background: `linear-gradient(135deg, ${tcg?.color ?? "#666"}10, transparent)`,
+        borderColor: `${tcg?.color ?? "#666"}50`,
+        background: `linear-gradient(135deg, ${tcg?.color ?? "#666"}20, ${tcg?.color ?? "#666"}08)`,
       }}
     >
       {/* Pulsing dot */}
@@ -69,7 +69,7 @@ function LfgPostBadge({ post }: { post: LfgPost }) {
           {post.format && <span className="text-muted-foreground"> · {post.format}</span>}
           <span className="text-muted-foreground"> · Suche Mitspieler...</span>
         </p>
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {format(from, "EEE d. MMM, HH:mm", { locale: de })} – {format(to, "HH:mm", { locale: de })} Uhr
           {post.location_label && ` · ${post.location_label}`}
         </p>
@@ -79,7 +79,7 @@ function LfgPostBadge({ post }: { post: LfgPost }) {
         type="button"
         onClick={handleCancel}
         disabled={pending}
-        className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
       >
         <X className="h-3.5 w-3.5" />
       </button>

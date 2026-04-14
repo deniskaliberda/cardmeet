@@ -17,7 +17,7 @@ export function ShopCard({ shop }: Props) {
   return (
     <Link
       href={`/shops/${shop.slug}`}
-      className="group relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-border bg-card/80 backdrop-blur-sm transition-all hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
+      className="group relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
     >
       {/* Top accent gradient bar */}
       <div
@@ -47,7 +47,7 @@ export function ShopCard({ shop }: Props) {
           {/* Session count badge */}
           {shop.session_count > 0 && (
             <div
-              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white shrink-0"
+              className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-white shrink-0"
               style={{ background: primaryColor }}
             >
               <CalendarDays className="h-3 w-3" />
@@ -60,7 +60,7 @@ export function ShopCard({ shop }: Props) {
         <ShopTcgBadges tcgs={shop.tcgs} />
 
         {/* Footer info */}
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-3">
             {shop.has_play_space && (
               <span className="flex items-center gap-1">

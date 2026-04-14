@@ -351,7 +351,7 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
         <div className="flex items-center gap-1.5 mb-0.5">
           <p className="truncate text-sm font-medium flex-1">{session.title}</p>
           {((session as any).shop_id || (session as any).is_venue) && (
-            <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/25">
+            <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
               🏪 {(session as any).shop_name || (session as any).venue_name || "LGS"}
             </span>
           )}
@@ -382,7 +382,7 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
         </div>
         <a href={`/players/${(session as any).host_id}`} onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
             {(session.host_username ?? "??").slice(0, 2).toUpperCase()}
           </div>
           <span className="text-xs font-medium">{session.host_username ?? "Unbekannt"}</span>

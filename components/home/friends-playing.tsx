@@ -42,14 +42,14 @@ export function FriendsPlaying({ sessions }: { sessions: FriendSession[] }) {
             <Link
               key={`${fs.friend_username}-${fs.session_id}`}
               href={`/sessions/${fs.session_id}`}
-              className="group flex items-center gap-3 rounded-xl border border-border bg-card/60 p-3 transition-all hover:border-primary/40 hover:bg-card active:scale-[0.98]"
+              className="group flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 transition-all hover:border-primary/40 hover:bg-card active:scale-[0.98]"
               style={{
-                background: `linear-gradient(135deg, ${tcg?.color ?? "#666"}08, var(--card))`,
+                background: `linear-gradient(135deg, ${tcg?.color ?? "#666"}18, var(--card))`,
               }}
             >
               {/* Friend avatar */}
               <div className="relative shrink-0">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
                   {fs.friend_avatar_url ? (
                     <img
                       src={fs.friend_avatar_url}
@@ -72,7 +72,7 @@ export function FriendsPlaying({ sessions }: { sessions: FriendSession[] }) {
                   <span className="text-xs font-semibold truncate">
                     {fs.friend_username}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">spielt</span>
+                  <span className="text-xs text-muted-foreground">spielt</span>
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
                   <span style={{ color: tcg?.color }}>{tcg?.shortName}</span>
@@ -80,7 +80,7 @@ export function FriendsPlaying({ sessions }: { sessions: FriendSession[] }) {
                   {fs.session_title}
                   {fs.shop_name && ` · @ ${fs.shop_name}`}
                 </p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {format(scheduled, "EEE d. MMM, HH:mm", { locale: de })} Uhr
                   {fs.session_city && ` · ${fs.session_city}`}
                 </p>
@@ -91,7 +91,7 @@ export function FriendsPlaying({ sessions }: { sessions: FriendSession[] }) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="shrink-0 rounded-lg text-[10px] h-7 px-2.5 group-hover:border-primary group-hover:text-primary"
+                  className="shrink-0 rounded-lg text-xs h-8 px-3 group-hover:border-primary group-hover:text-primary"
                 >
                   Beitreten
                 </Button>

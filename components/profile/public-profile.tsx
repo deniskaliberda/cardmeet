@@ -255,9 +255,9 @@ export function PublicProfile({
           <div className="flex flex-col gap-3">
             {reviews.map((r) => (
               <div key={r.id} className="flex gap-3">
-                <Avatar className="h-7 w-7 shrink-0">
+                <Avatar className="h-8 w-8 shrink-0">
                   <AvatarImage src={r.profiles?.avatar_url ?? undefined} />
-                  <AvatarFallback className="text-[10px]">
+                  <AvatarFallback className="text-xs">
                     {(r.profiles?.username ?? "?").slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>

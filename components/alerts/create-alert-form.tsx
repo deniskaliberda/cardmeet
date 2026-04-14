@@ -138,7 +138,7 @@ export function CreateAlertForm({ onCreated }: { onCreated?: () => void }) {
   }
 
   return (
-    <div className="rounded-xl bg-primary/5 border-2 border-primary p-5 space-y-4">
+    <div className="rounded-xl bg-primary/15 border-2 border-primary p-5 space-y-4">
       <div>
         <h4 className="text-sm font-semibold mb-1">Neuen Alert einrichten</h4>
         <p className="text-xs text-muted-foreground leading-relaxed">
@@ -188,7 +188,7 @@ export function CreateAlertForm({ onCreated }: { onCreated?: () => void }) {
 
         {lat !== null ? (
           /* Selected location display */
-          <div className="flex items-center gap-2 rounded-[10px] border-2 border-primary bg-primary/5 px-3 py-2">
+          <div className="flex items-center gap-2 rounded-[10px] border-2 border-primary bg-primary/15 px-3 py-2">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
             <span className="flex-1 text-xs font-medium truncate">{locationLabel}</span>
             <button
@@ -291,7 +291,7 @@ export function CreateAlertForm({ onCreated }: { onCreated?: () => void }) {
         </p>
       </div>
 
-      <div className="rounded-lg bg-primary/8 border border-primary/20 px-3 py-2 text-xs text-muted-foreground leading-relaxed">
+      <div className="rounded-lg bg-primary/15 border border-primary/30 px-3 py-2 text-xs text-muted-foreground leading-relaxed">
         ✅ Sobald jemand eine{" "}
         <strong className="text-foreground">
           {TCG_LIST.find((t) => t.id === selectedTcg)?.shortName}
