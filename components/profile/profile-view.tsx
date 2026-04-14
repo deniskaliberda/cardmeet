@@ -15,7 +15,6 @@ import { AddFriendSearch } from "@/components/friends/add-friend-search";
 import { AlertCard } from "@/components/alerts/alert-card";
 import { CreateAlertForm } from "@/components/alerts/create-alert-form";
 import { ProfileForm } from "@/components/profile/profile-form";
-import { LgsForm } from "@/components/profile/lgs-form";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -433,15 +432,6 @@ function SettingsTab({
             </div>
           ))}
         </div>
-      </div>
-
-      {/* LGS / Spielladen */}
-      <div>
-        <h3 className="text-sm font-semibold mb-1">🏪 Spielladen-Profil</h3>
-        <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-          Betreibst du einen Spielladen? Aktiviere das Venue-Profil damit deine Sessions als offizielle LGS-Events hervorgehoben werden.
-        </p>
-        <LgsForm profile={profile} />
       </div>
 
       {/* DSGVO / Datenverwaltung */}

@@ -33,6 +33,23 @@ export default async function CreateSessionPage() {
       .filter((f) => f.user_id);
   }
 
+  // Load registered LGS venues
+  const { data: lgsRaw } = await supabase
+    .from("profiles")
+    .select("id, venue_name, city, city_lat, city_lng, venue_website")
+    .eq("is_venue", true)
+    .not("venue_name", "is", null)
+    .order("venue_name");
+
+  const lgsVenues = (lgsRaw ?? []).map((v) => ({
+    id: v.id as string,
+    venue_name: v.venue_name as string | null,
+    city: v.city as string | null,
+    city_lat: v.city_lat as number | null,
+    city_lng: v.city_lng as number | null,
+    venue_website: v.venue_website as string | null,
+  }));
+
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
@@ -41,7 +58,7 @@ export default async function CreateSessionPage() {
           Erstelle eine Spielrunde und finde Mitspieler
         </p>
       </div>
-      <CreateSessionForm friends={friends} />
+      <CreateSessionForm friends={friends} lgsVenues={lgsVenues} />
     </div>
   );
 }

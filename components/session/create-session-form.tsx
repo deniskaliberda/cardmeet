@@ -8,8 +8,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { createSession } from "@/app/(app)/sessions/create/actions";
 import { toast } from "sonner";
-import { Check, ChevronLeft, MapPin, Minus, Plus, UserPlus } from "lucide-react";
+import { Check, ChevronLeft, ExternalLink, MapPin, Minus, Plus, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type LgsVenue = {
+  id: string;
+  venue_name: string | null;
+  city: string | null;
+  city_lat: number | null;
+  city_lng: number | null;
+  venue_website: string | null;
+};
+
+type LocationMode = "city" | "address" | "lgs";
 
 type StepId =
   | "tcg"
@@ -46,7 +57,13 @@ type Friend = {
   avatar_url: string | null;
 };
 
-export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
+export function CreateSessionForm({
+  friends = [],
+  lgsVenues = [],
+}: {
+  friends?: Friend[];
+  lgsVenues?: LgsVenue[];
+}) {
   const [step, setStep] = useState<StepId>("tcg");
   const [tcgId, setTcgId] = useState("");
   const [formatId, setFormatId] = useState("");
@@ -59,6 +76,7 @@ export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
 
   const [invitedFriendIds, setInvitedFriendIds] = useState<string[]>([]);
 
+  const [locationMode, setLocationMode] = useState<LocationMode>("city");
   const [locationQuery, setLocationQuery] = useState("");
   const [locationResults, setLocationResults] = useState<NominatimResult[]>([]);
   const [resolvedLat, setResolvedLat] = useState("52.52");
@@ -67,6 +85,7 @@ export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
   const [resolvedPostalCode, setResolvedPostalCode] = useState("");
   const [locationLabel, setLocationLabel] = useState("");
   const [showResults, setShowResults] = useState(false);
+  const [selectedLgs, setSelectedLgs] = useState<LgsVenue | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -74,15 +93,16 @@ export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationQuery + " Deutschland")}&countrycodes=de&format=json&addressdetails=1&limit=5`,
-          { headers: { "Accept-Language": "de" } }
-        );
+        const isCityMode = locationMode === "city";
+        const url = isCityMode
+          ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationQuery + " Deutschland")}&countrycodes=de&format=json&addressdetails=1&limit=5&featuretype=city`
+          : `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationQuery + " Deutschland")}&countrycodes=de&format=json&addressdetails=1&limit=5`;
+        const res = await fetch(url, { headers: { "Accept-Language": "de" } });
         setLocationResults(await res.json());
         setShowResults(true);
       } catch {}
     }, 400);
-  }, [locationQuery]);
+  }, [locationQuery, locationMode]);
 
   function selectLocation(r: NominatimResult) {
     const city = r.address.city ?? r.address.town ?? r.address.village ?? "";
@@ -94,6 +114,27 @@ export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
     setLocationQuery("");
     setLocationResults([]);
     setShowResults(false);
+    setSelectedLgs(null);
+  }
+
+  function selectLgs(venue: LgsVenue) {
+    setSelectedLgs(venue);
+    setResolvedLat(String(venue.city_lat ?? "52.52"));
+    setResolvedLng(String(venue.city_lng ?? "13.405"));
+    setResolvedCity(venue.city ?? "");
+    setResolvedPostalCode("");
+    setLocationLabel(venue.venue_name ?? venue.city ?? "");
+    setLocationName(venue.venue_name ?? "");
+  }
+
+  function resetLocation() {
+    setLocationLabel("");
+    setSelectedLgs(null);
+    setResolvedCity("");
+    setResolvedPostalCode("");
+    setResolvedLat("52.52");
+    setResolvedLng("13.405");
+    setLocationName("");
   }
 
   const tcg = tcgId ? getTCG(tcgId) : undefined;
@@ -508,80 +549,162 @@ export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
           <div className="space-y-5">
             <StepHeading
               title="Wo trefft ihr euch?"
-              sub="Stadt, PLZ oder Adresse eingeben"
+              sub="Wähle eine Ortsart"
             />
 
-            {!locationLabel ? (
-              <div className="relative">
-                <Input
-                  value={locationQuery}
-                  onChange={(e) => setLocationQuery(e.target.value)}
-                  placeholder="z.B. Alexanderplatz Berlin oder 10178..."
-                  className="h-14 rounded-2xl text-base"
-                  autoComplete="off"
-                  autoFocus
-                />
-                {showResults && locationResults.length > 0 && (
-                  <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border-2 border-border bg-card shadow-lg">
-                    {locationResults.map((r) => (
+            {/* Mode selector */}
+            <div className="grid gap-2"
+              style={{ gridTemplateColumns: lgsVenues.length > 0 ? "1fr 1fr 1fr" : "1fr 1fr" }}>
+              {(["city", "address", ...(lgsVenues.length > 0 ? ["lgs"] : [])] as LocationMode[]).map((mode) => {
+                const labels: Record<LocationMode, { icon: string; label: string; sub: string }> = {
+                  city:    { icon: "🗺️", label: "Grober Ort",    sub: "Stadt / Viertel" },
+                  address: { icon: "📍", label: "Adresse",        sub: "Straße & Hausnr." },
+                  lgs:     { icon: "🏪", label: "Spielladen",     sub: `${lgsVenues.length} in der Nähe` },
+                };
+                const m = labels[mode];
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => { setLocationMode(mode); resetLocation(); }}
+                    className={cn(
+                      "flex flex-col items-center gap-1 rounded-2xl border-2 p-3 text-center transition-all cursor-pointer",
+                      locationMode === mode
+                        ? "border-primary bg-primary/8 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    <span className="text-xl">{m.icon}</span>
+                    <span className="text-xs font-semibold">{m.label}</span>
+                    <span className="text-[10px] opacity-70">{m.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── LGS picker ── */}
+            {locationMode === "lgs" && (
+              <div className="space-y-3">
+                {selectedLgs ? (
+                  <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
+                    <span className="text-2xl shrink-0">🏪</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold truncate">{selectedLgs.venue_name}</p>
+                      <p className="text-xs text-muted-foreground">{selectedLgs.city}</p>
+                      {selectedLgs.venue_website && (
+                        <a href={selectedLgs.venue_website} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-0.5">
+                          Website <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      )}
+                    </div>
+                    <button type="button" onClick={resetLocation}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                      ändern
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+                    {lgsVenues.map((venue) => (
                       <button
-                        key={r.place_id}
+                        key={venue.id}
                         type="button"
-                        className="flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-muted/60"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => selectLocation(r)}
+                        onClick={() => selectLgs(venue)}
+                        className="flex items-center gap-3 rounded-2xl border-2 border-border bg-card p-3.5 text-left hover:border-primary transition-colors cursor-pointer"
                       >
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                        <span className="line-clamp-2 text-sm">{r.display_name}</span>
+                        <span className="text-2xl shrink-0">🏪</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate">
+                            {venue.venue_name ?? "Unbekannter Laden"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{venue.city}</p>
+                        </div>
+                        <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
-                <MapPin className="h-5 w-5 shrink-0 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{locationLabel}</p>
-                  {resolvedPostalCode && (
-                    <p className="text-xs text-muted-foreground">
-                      PLZ {resolvedPostalCode} · {resolvedCity}
-                    </p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => {
-                    setLocationLabel("");
-                    setResolvedCity("");
-                    setResolvedPostalCode("");
-                    setResolvedLat("52.52");
-                    setResolvedLng("13.405");
-                  }}
-                >
-                  ändern
-                </button>
-              </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
-                Genauer Treffpunkt{" "}
-                <span className="font-normal">(optional)</span>
-              </Label>
-              <Input
-                value={locationName}
-                onChange={(e) => setLocationName(e.target.value)}
-                placeholder="z.B. Café XY, Spieleladen, bei mir zu Hause..."
-                className="rounded-2xl"
-              />
-              <p className="text-xs text-muted-foreground">
-                Tipp: Viele Gruppen klären den genauen Ort im Session-Chat.
-              </p>
-            </div>
+            {/* ── City / Address search ── */}
+            {(locationMode === "city" || locationMode === "address") && (
+              <>
+                {!locationLabel ? (
+                  <div className="relative">
+                    <Input
+                      value={locationQuery}
+                      onChange={(e) => setLocationQuery(e.target.value)}
+                      placeholder={
+                        locationMode === "city"
+                          ? "z.B. Berlin Mitte, Hamburg..."
+                          : "z.B. Karl-Marx-Allee 1, Berlin..."
+                      }
+                      className="h-14 rounded-2xl text-base"
+                      autoComplete="off"
+                      autoFocus
+                    />
+                    {showResults && locationResults.length > 0 && (
+                      <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border-2 border-border bg-card shadow-lg">
+                        {locationResults.map((r) => (
+                          <button
+                            key={r.place_id}
+                            type="button"
+                            className="flex w-full items-start gap-2.5 px-4 py-3 text-left transition-colors hover:bg-muted/60"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => selectLocation(r)}
+                          >
+                            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                            <span className="line-clamp-2 text-sm">{r.display_name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
+                    <MapPin className="h-5 w-5 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{locationLabel}</p>
+                      {resolvedPostalCode && (
+                        <p className="text-xs text-muted-foreground">
+                          PLZ {resolvedPostalCode} · {resolvedCity}
+                        </p>
+                      )}
+                    </div>
+                    <button type="button" onClick={resetLocation}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      ändern
+                    </button>
+                  </div>
+                )}
 
-            <Button type="submit" className="w-full rounded-2xl" size="lg">
+                {locationMode === "address" && locationLabel && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      Zusatz <span className="font-normal">(optional)</span>
+                    </Label>
+                    <Input
+                      value={locationName}
+                      onChange={(e) => setLocationName(e.target.value)}
+                      placeholder="z.B. Hinterhaus, 2. OG, Klingel Weber..."
+                      className="rounded-2xl"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              Tipp: Den genauen Treffpunkt können Teilnehmer im Session-Chat erfahren.
+            </p>
+
+            <Button
+              type="submit"
+              className="w-full rounded-2xl"
+              size="lg"
+              disabled={!locationLabel}
+            >
               Session erstellen 🎴
             </Button>
           </div>
