@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PublicProfile } from "@/components/profile/public-profile";
 
 export default async function PlayerProfilePage({
@@ -11,6 +11,8 @@ export default async function PlayerProfilePage({
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect(`/login?next=/players/${id}`);
 
   const [{ data: profile }, { data: sessions }, { data: reviews }, { data: friendshipRow }] =
     await Promise.all([
