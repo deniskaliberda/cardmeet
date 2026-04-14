@@ -108,15 +108,8 @@ function ParticipantRow({
     });
   }
 
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-2 rounded-lg p-2",
-        isCurrentUser
-          ? "bg-primary/8 border-2 border-primary/30"
-          : "bg-[var(--surface-container-low)]"
-      )}
-    >
+  const content = (
+    <>
       {/* Avatar with online dot */}
       <div className="relative">
         <Avatar className="h-8 w-8">
@@ -131,7 +124,6 @@ function ParticipantRow({
             {username.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        {/* Online indicator (placeholder) */}
         <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-[#006b5c] border-2 border-[var(--surface-container-low)]" />
       </div>
 
@@ -143,12 +135,39 @@ function ParticipantRow({
         <div className="text-[10px] text-muted-foreground">⭐ 4.5</div>
       </div>
 
-      {/* Host badge or remove button */}
+      {/* Host badge */}
       {isHost && (
         <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-medium shrink-0">
           HOST
         </span>
       )}
+    </>
+  );
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-lg p-2",
+        isCurrentUser
+          ? "bg-primary/8 border-2 border-primary/30"
+          : "bg-[var(--surface-container-low)]"
+      )}
+    >
+      {/* Clickable profile link for other users */}
+      {!isCurrentUser ? (
+        <a
+          href={`/players/${userId}`}
+          className="flex flex-1 items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
+        >
+          {content}
+        </a>
+      ) : (
+        <div className="flex flex-1 items-center gap-2 min-w-0">
+          {content}
+        </div>
+      )}
+
+      {/* Remove button (host only) */}
       {canRemove && !isHost && (
         <button
           onClick={handleRemove}

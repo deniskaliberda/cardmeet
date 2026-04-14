@@ -10,7 +10,9 @@ export default async function PlayerProfilePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: sessions }, { data: reviews }] =
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const [{ data: profile }, { data: sessions }, { data: reviews }, { data: friendshipRow }] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -35,15 +37,34 @@ export default async function PlayerProfilePage({
         .eq("reviewee_id", id)
         .order("created_at", { ascending: false })
         .limit(10),
+      user
+        ? supabase
+            .from("friendships")
+            .select("id, status, requester_id")
+            .or(
+              `and(requester_id.eq.${user.id},addressee_id.eq.${id}),and(requester_id.eq.${id},addressee_id.eq.${user.id})`
+            )
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
 
   if (!profile) notFound();
+
+  const friendship = friendshipRow
+    ? {
+        id: friendshipRow.id as string,
+        status: friendshipRow.status as "pending" | "accepted" | "blocked",
+        isRequester: (friendshipRow.requester_id as string) === user?.id,
+      }
+    : null;
 
   return (
     <PublicProfile
       profile={profile as any}
       hostedSessions={(sessions ?? []) as any[]}
       reviews={(reviews ?? []) as any[]}
+      currentUserId={user?.id ?? null}
+      friendship={friendship}
     />
   );
 }

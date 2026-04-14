@@ -1,12 +1,16 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, MapPin, Star, Users } from "lucide-react";
+import { Calendar, MapPin, Star, UserCheck, UserPlus, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { getTCG } from "@/lib/config/tcg";
 import { TCGIcon } from "@/components/icons/tcg-icons";
 import { cn } from "@/lib/utils";
+import { sendFriendRequest, acceptFriendRequest } from "@/app/(app)/friends/actions";
+import { toast } from "sonner";
 
 type Profile = {
   id: string;
@@ -40,15 +44,27 @@ type Review = {
   profiles?: { username: string; avatar_url: string | null } | null;
 };
 
+type FriendshipInfo = {
+  id: string;
+  status: "pending" | "accepted" | "blocked";
+  isRequester: boolean;
+} | null;
+
 export function PublicProfile({
   profile,
   hostedSessions,
   reviews,
+  currentUserId,
+  friendship: initialFriendship,
 }: {
   profile: Profile;
   hostedSessions: Session[];
   reviews: Review[];
+  currentUserId?: string | null;
+  friendship?: FriendshipInfo;
 }) {
+  const [friendship, setFriendship] = useState<FriendshipInfo>(initialFriendship ?? null);
+  const [pending, startTransition] = useTransition();
   const displayName = profile.display_name ?? profile.username;
   const initials = displayName.slice(0, 2).toUpperCase();
   const rating = profile.avg_rating ?? 0;
@@ -68,16 +84,73 @@ export function PublicProfile({
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">{displayName}</h1>
-          {profile.display_name && (
-            <p className="text-sm text-muted-foreground">@{profile.username}</p>
-          )}
-          {profile.city && (
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-              <MapPin className="h-3.5 w-3.5" />
-              {profile.city}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="font-heading text-2xl font-semibold tracking-tight">{displayName}</h1>
+              {profile.display_name && (
+                <p className="text-sm text-muted-foreground">@{profile.username}</p>
+              )}
+              {profile.city && (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {profile.city}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Friend button — only shown when logged in and viewing someone else */}
+            {currentUserId && currentUserId !== profile.id && (
+              <div className="shrink-0">
+                {!friendship && (
+                  <Button
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => startTransition(async () => {
+                      const r = await sendFriendRequest(profile.id);
+                      if (r?.error) toast.error(r.error);
+                      else {
+                        toast.success("Freundschaftsanfrage gesendet");
+                        setFriendship({ id: "", status: "pending", isRequester: true });
+                      }
+                    })}
+                  >
+                    <UserPlus className="h-4 w-4 mr-1.5" />
+                    Freund hinzufügen
+                  </Button>
+                )}
+                {friendship?.status === "pending" && friendship.isRequester && (
+                  <Button size="sm" variant="outline" disabled className="text-muted-foreground">
+                    <UserCheck className="h-4 w-4 mr-1.5" />
+                    Anfrage gesendet
+                  </Button>
+                )}
+                {friendship?.status === "pending" && !friendship.isRequester && (
+                  <Button
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => startTransition(async () => {
+                      const r = await acceptFriendRequest(friendship.id);
+                      if (r?.error) toast.error(r.error);
+                      else {
+                        toast.success("Freundschaft angenommen!");
+                        setFriendship({ ...friendship, status: "accepted" });
+                      }
+                    })}
+                  >
+                    <UserCheck className="h-4 w-4 mr-1.5" />
+                    Anfrage annehmen
+                  </Button>
+                )}
+                {friendship?.status === "accepted" && (
+                  <Button size="sm" variant="outline" disabled className="text-green-600 border-green-200">
+                    <UserCheck className="h-4 w-4 mr-1.5" />
+                    Befreundet
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
           {profile.bio && (
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed line-clamp-3">
               {profile.bio}
