@@ -2,20 +2,45 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingExplorer } from "@/components/landing/landing-explorer";
+import { FadeIn } from "@/components/landing/fade-in";
+import { DynamicSessionBadge } from "@/components/landing/dynamic-session-badge";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { Button } from "@/components/ui/button";
 import { TCG_LIST } from "@/lib/config/tcg";
+import { TCGIcon } from "@/components/icons/tcg-icons";
 
 export const revalidate = 60;
 
 export default async function LandingPage() {
   const supabase = await createClient();
 
-  const { data: sessions } = await supabase.rpc("nearby_sessions", {
-    p_lat: 52.52,
-    p_lng: 13.405,
-    radius_km: 50,
-  });
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Load sessions + platform stats in parallel
+  const now = new Date().toISOString();
+  const [
+    { data: sessions },
+    { count: activeSessions },
+    { count: userCount },
+    { data: cityRows },
+  ] = await Promise.all([
+    supabase.rpc("nearby_sessions", { p_lat: 52.52, p_lng: 13.405, radius_km: 50 }),
+    supabase
+      .from("sessions")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["open", "full"])
+      .gt("scheduled_at", now),
+    supabase.from("profiles").select("*", { count: "exact", head: true }),
+    supabase
+      .from("sessions")
+      .select("city")
+      .not("city", "is", null)
+      .gt("scheduled_at", now),
+  ]);
+
+  const cityCount = new Set((cityRows ?? []).map((r) => r.city)).size;
+  const totalSessions = activeSessions ?? 0;
+  const totalUsers = userCount ?? 0;
 
   const mappedSessions = (sessions ?? []).map((s: Record<string, unknown>) => ({
     id: s.id as string,
@@ -35,7 +60,16 @@ export default async function LandingPage() {
     host_avatar: (s.host_avatar as string) ?? null,
   }));
 
-  const sessionCount = mappedSessions.length;
+  // Fetch username for logged-in hero
+  let username: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .single();
+    username = profile?.username ?? null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -45,171 +79,232 @@ export default async function LandingPage() {
 
         {/* ── Hero ── */}
         <section className="mb-10 text-center">
-          <div
-            className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium text-muted-foreground"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-          >
-            <span
-              className="inline-block h-2 w-2 rounded-full bg-green-500"
-              style={{ animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite" }}
-            />
-            {sessionCount > 0
-              ? `${sessionCount} aktive Session${sessionCount !== 1 ? "s" : ""} in Berlin`
-              : "Jetzt in Berlin starten"}
-          </div>
-
-          <h1 className="mb-4 text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
-            Finde TCG-Spieler{" "}
-            <span
-              style={{
-                background: "linear-gradient(135deg, #0066FF 0%, #00C2A8 55%, #FF6B35 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              in deiner Stadt.
-            </span>
-          </h1>
-
-          <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            CardMeet verbindet Kartenspiel-Fans lokal. Finde offene Sessions auf der
-            Karte, tritt bei oder erstelle deine eigene — ohne Discord-Gruppen,
-            Reddit-Posts oder endlose Suche.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link href="/register">
-              <Button size="lg" className="px-8">
-                Kostenlos registrieren
-              </Button>
-            </Link>
-            <Link href="/sessions">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-primary px-8 text-primary hover:bg-primary/5 hover:text-primary"
-              >
-                Sessions entdecken
-              </Button>
-            </Link>
-          </div>
-        </section>
-
-        {/* ── Live Map ── */}
-        <section className="mb-12">
-          <div className="mb-4 flex items-end justify-between">
+          {user ? (
+            /* ── Logged-in hero ── */
             <div>
-              <h2 className="text-xl font-semibold">Sessions in deiner Nähe</h2>
-              <p className="text-sm text-muted-foreground">
-                Berlin & Umland · 50 km Radius · Echtzeit
-              </p>
-            </div>
-            <Link
-              href="/sessions"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Alle Sessions →
-            </Link>
-          </div>
-          <LandingExplorer sessions={mappedSessions} />
-        </section>
-
-        {/* ── How it works ── */}
-        <section className="mb-12">
-          <h2 className="mb-6 text-center text-xl font-semibold">
-            So funktioniert CardMeet
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              {
-                step: "01",
-                icon: "🗺️",
-                title: "Sessions auf der Karte finden",
-                desc: "Sieh auf einen Blick, wo in deiner Stadt gespielt wird — ohne Account nötig.",
-              },
-              {
-                step: "02",
-                icon: "✋",
-                title: "Beitreten oder erstellen",
-                desc: "Tritt einer offenen Runde bei oder erstelle deine eigene Session in wenigen Sekunden.",
-              },
-              {
-                step: "03",
-                icon: "⭐",
-                title: "Spielen & bewerten",
-                desc: "Triff andere Spieler vor Ort, bau dein Netzwerk auf und hinterlasse ein ehrliches Rating.",
-              },
-            ].map((item) => (
               <div
-                key={item.step}
-                className="relative rounded-2xl border-2 border-border bg-card p-6"
+                className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium text-muted-foreground"
                 style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
               >
-                <div className="mb-4 text-3xl">{item.icon}</div>
-                <div
-                  className="absolute right-5 top-5 text-xs font-semibold"
+                <span
+                  className="inline-block h-2 w-2 rounded-full bg-green-500"
+                  style={{ animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite" }}
+                />
+                <DynamicSessionBadge total={totalSessions} />
+              </div>
+              <h1 className="mb-3 text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">
+                Willkommen zurück{username ? `, ${username}` : ""}!
+              </h1>
+              <p className="mx-auto mb-8 max-w-md text-base text-muted-foreground">
+                {totalSessions > 0
+                  ? `${totalSessions} Session${totalSessions !== 1 ? "s" : ""} warten auf dich — spring direkt rein.`
+                  : "Erstelle die erste Session in deiner Stadt."}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Link href="/sessions">
+                  <Button size="lg" className="px-8">Sessions entdecken</Button>
+                </Link>
+                <Link href="/my-sessions">
+                  <Button size="lg" variant="outline" className="border-2 border-primary px-8 text-primary hover:bg-primary/5 hover:text-primary">
+                    Meine Sessions
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            /* ── Guest hero ── */
+            <div>
+              <div
+                className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium text-muted-foreground"
+                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+              >
+                <span
+                  className="inline-block h-2 w-2 rounded-full bg-green-500"
+                  style={{ animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite" }}
+                />
+                <DynamicSessionBadge total={totalSessions} />
+              </div>
+              <h1 className="mb-4 text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
+                Finde TCG-Spieler{" "}
+                <span
                   style={{
-                    fontFamily: "var(--font-mono), 'Fira Code', monospace",
-                    color: "var(--primary)",
-                    opacity: 0.35,
+                    background: "linear-gradient(135deg, #0066FF 0%, #00C2A8 55%, #FF6B35 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
                   }}
                 >
-                  {item.step}
-                </div>
-                <h3 className="mb-2 font-semibold">{item.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {item.desc}
+                  in deiner Stadt.
+                </span>
+              </h1>
+              <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                CardMeet verbindet Kartenspiel-Fans lokal. Finde offene Sessions auf der
+                Karte, tritt bei oder erstelle deine eigene — ohne Discord-Gruppen,
+                Reddit-Posts oder endlose Suche.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Link href="/register">
+                  <Button size="lg" className="px-8">Kostenlos registrieren</Button>
+                </Link>
+                <Link href="/sessions">
+                  <Button size="lg" variant="outline" className="border-2 border-primary px-8 text-primary hover:bg-primary/5 hover:text-primary">
+                    Sessions entdecken
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ── Social Proof Stats ── */}
+        <FadeIn delay={100}>
+          <section className="mb-10">
+            <div className="mx-auto flex max-w-lg items-center justify-center gap-6 rounded-2xl border border-border bg-card px-6 py-4"
+              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+              <StatPill value={totalSessions} label="aktive Sessions" />
+              <div className="h-8 w-px bg-border" />
+              <StatPill value={totalUsers} label="Spieler" />
+              <div className="h-8 w-px bg-border" />
+              <StatPill value={cityCount} label={cityCount === 1 ? "Stadt" : "Städte"} />
+            </div>
+          </section>
+        </FadeIn>
+
+        {/* ── Live Explorer ── */}
+        <FadeIn delay={150}>
+          <section className="mb-12">
+            <div className="mb-4 flex items-end justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Sessions in deiner Nähe</h2>
+                <p className="text-sm text-muted-foreground">
+                  Berlin & Umland · 50 km Radius · Echtzeit
                 </p>
               </div>
-            ))}
-          </div>
-        </section>
+              <Link href="/sessions" className="text-sm font-medium text-primary hover:underline">
+                Alle Sessions →
+              </Link>
+            </div>
+            <LandingExplorer sessions={mappedSessions} />
+          </section>
+        </FadeIn>
+
+        {/* ── How it works ── */}
+        <FadeIn delay={0}>
+          <section className="mb-12">
+            <h2 className="mb-6 text-center text-xl font-semibold">So funktioniert CardMeet</h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                {
+                  step: "01",
+                  icon: "🗺️",
+                  title: "Sessions auf der Karte finden",
+                  desc: "Sieh auf einen Blick, wo in deiner Stadt gespielt wird — ohne Account nötig.",
+                },
+                {
+                  step: "02",
+                  icon: "✋",
+                  title: "Beitreten oder erstellen",
+                  desc: "Tritt einer offenen Runde bei oder erstelle deine eigene Session in wenigen Sekunden.",
+                },
+                {
+                  step: "03",
+                  icon: "⭐",
+                  title: "Spielen & bewerten",
+                  desc: "Triff andere Spieler vor Ort, bau dein Netzwerk auf und hinterlasse ein ehrliches Rating.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.step}
+                  className="relative rounded-2xl border-2 border-border bg-card p-6"
+                  style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+                >
+                  <div className="mb-4 text-3xl">{item.icon}</div>
+                  <div
+                    className="absolute right-5 top-5 text-xs font-semibold"
+                    style={{
+                      fontFamily: "var(--font-mono), 'Fira Code', monospace",
+                      color: "var(--primary)",
+                      opacity: 0.35,
+                    }}
+                  >
+                    {item.step}
+                  </div>
+                  <h3 className="mb-2 font-semibold">{item.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </FadeIn>
 
         {/* ── Supported TCGs ── */}
-        <section className="mb-12">
-          <h2 className="mb-4 text-center text-xl font-semibold">
-            Unterstützte Spiele
-          </h2>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {TCG_LIST.map((tcg) => (
-              <div
-                key={tcg.id}
-                className="rounded-full border-2 bg-card px-4 py-2 text-sm font-semibold"
-                style={{
-                  borderColor: `${tcg.color}55`,
-                  color: tcg.color,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                }}
-              >
-                {tcg.shortName}
-              </div>
-            ))}
-          </div>
-        </section>
+        <FadeIn delay={0}>
+          <section className="mb-12">
+            <h2 className="mb-6 text-center text-xl font-semibold">Unterstützte Spiele</h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {TCG_LIST.map((tcg) => (
+                <div
+                  key={tcg.id}
+                  className="flex flex-col items-center gap-3 rounded-2xl border-2 bg-card p-5 transition-transform hover:-translate-y-0.5"
+                  style={{
+                    borderColor: `${tcg.color}40`,
+                    boxShadow: `0 2px 8px ${tcg.color}10`,
+                  }}
+                >
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-xl"
+                    style={{ background: `${tcg.color}18` }}
+                  >
+                    <TCGIcon tcgId={tcg.id} className="h-7 w-7" color={tcg.color} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold" style={{ color: tcg.color }}>
+                      {tcg.shortName}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                      {tcg.name}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </FadeIn>
 
-        {/* ── CTA Banner ── */}
-        <section
-          className="rounded-2xl border-2 border-primary/20 px-8 py-12 text-center"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(0,102,255,0.04) 0%, rgba(0,194,168,0.04) 100%)",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-          }}
-        >
-          <h2 className="mb-2 text-2xl font-semibold">Bereit zum Spielen?</h2>
-          <p className="mb-6 text-muted-foreground">
-            Erstelle deinen kostenlosen Account und finde heute noch Mitspieler.
-          </p>
-          <Link href="/register">
-            <Button size="lg" className="px-10">
-              Jetzt kostenlos starten
-            </Button>
-          </Link>
-        </section>
+        {/* ── CTA Banner (guests only) ── */}
+        {!user && (
+          <FadeIn delay={0}>
+            <section
+              className="rounded-2xl border-2 border-primary/20 px-8 py-12 text-center"
+              style={{
+                background: "linear-gradient(135deg, rgba(0,102,255,0.04) 0%, rgba(0,194,168,0.04) 100%)",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              }}
+            >
+              <h2 className="mb-2 text-2xl font-semibold">Bereit zum Spielen?</h2>
+              <p className="mb-6 text-muted-foreground">
+                Erstelle deinen kostenlosen Account und finde heute noch Mitspieler.
+              </p>
+              <Link href="/register">
+                <Button size="lg" className="px-10">Jetzt kostenlos starten</Button>
+              </Link>
+            </section>
+          </FadeIn>
+        )}
       </div>
 
       <SiteFooter />
+    </div>
+  );
+}
+
+function StatPill({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="text-center">
+      <div className="text-2xl font-bold tabular-nums">
+        {value > 0 ? value.toLocaleString("de-DE") : "–"}
+      </div>
+      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
