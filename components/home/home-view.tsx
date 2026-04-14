@@ -7,6 +7,7 @@ import { LfgButton } from "@/components/home/lfg-button";
 import { LfgActiveBadge } from "@/components/lfg/lfg-active-badge";
 import { NearbySessions } from "@/components/home/nearby-sessions";
 import { UpcomingSessions } from "@/components/home/upcoming-sessions";
+import { FriendsPlaying } from "@/components/home/friends-playing";
 import { TcgShortcuts } from "@/components/home/tcg-shortcuts";
 import { MySessionsView } from "@/components/session/my-sessions-view";
 
@@ -23,6 +24,7 @@ type Props = {
   userLat?: number;
   userLng?: number;
   userCity?: string;
+  friendsSessions?: any[];
   // Meine Sessions data
   mySessionsUpcoming: any[];
   mySessionsPast: any[];
@@ -52,6 +54,7 @@ export function HomeView({
   userLat,
   userLng,
   userCity,
+  friendsSessions = [],
   mySessionsUpcoming,
   mySessionsPast,
   initialSessionId,
@@ -102,6 +105,7 @@ export function HomeView({
             activeLfgCount={activeLfgPosts.length}
           />
           <LfgActiveBadge posts={activeLfgPosts} />
+          <FriendsPlaying sessions={friendsSessions} />
           <HeroActions openSessionCount={openCount} />
           {allUpcoming.length > 0 && <UpcomingSessions sessions={allUpcoming} />}
           <TcgShortcuts />

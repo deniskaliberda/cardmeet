@@ -153,6 +153,42 @@ export default async function DashboardPage() {
     return { user_id: p?.id ?? "", username: p?.username ?? "Unbekannt", avatar_url: p?.avatar_url ?? null, avg_rating: null };
   }).filter((f) => f.user_id);
 
+  // Fetch friends' upcoming sessions
+  const friendIds = friends.map((f) => f.user_id).filter(Boolean);
+  let friendsSessions: any[] = [];
+  if (friendIds.length > 0) {
+    const { data: friendParticipations } = await supabase
+      .from("session_participants")
+      .select("user_id, sessions(id, title, tcg, format, scheduled_at, city, location_name, current_players, max_players, status, shop_id, shops(name)), profiles(username, avatar_url)")
+      .in("user_id", friendIds)
+      .eq("status", "joined")
+      .gt("sessions.scheduled_at", now)
+      .limit(10);
+
+    friendsSessions = (friendParticipations ?? [])
+      .filter((fp: any) => fp.sessions && new Date(fp.sessions.scheduled_at) > new Date())
+      .map((fp: any) => ({
+        friend_username: (fp.profiles as any)?.username ?? "Unbekannt",
+        friend_avatar_url: (fp.profiles as any)?.avatar_url ?? null,
+        session_id: fp.sessions.id,
+        session_title: fp.sessions.title,
+        session_tcg: fp.sessions.tcg,
+        session_format: fp.sessions.format,
+        session_scheduled_at: fp.sessions.scheduled_at,
+        session_city: fp.sessions.city,
+        session_location_name: fp.sessions.location_name,
+        session_current_players: fp.sessions.current_players,
+        session_max_players: fp.sessions.max_players,
+        shop_name: fp.sessions.shops?.name ?? null,
+      }))
+      // Deduplicate by session_id (multiple friends might be in same session)
+      .filter((fs: any, i: number, arr: any[]) =>
+        arr.findIndex((x) => x.session_id === fs.session_id && x.friend_username === fs.friend_username) === i
+      )
+      .sort((a: any, b: any) => new Date(a.session_scheduled_at).getTime() - new Date(b.session_scheduled_at).getTime())
+      .slice(0, 5);
+  }
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Guten Morgen" : hour < 18 ? "Guten Tag" : "Guten Abend";
 
@@ -169,6 +205,7 @@ export default async function DashboardPage() {
       userLat={userLat}
       userLng={userLng}
       userCity={profile?.city ?? "Berlin"}
+      friendsSessions={friendsSessions}
       mySessionsUpcoming={myUpcoming}
       mySessionsPast={myPast}
       initialSessionId={firstSession?.id ?? null}
