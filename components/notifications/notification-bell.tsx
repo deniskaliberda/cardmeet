@@ -106,6 +106,17 @@ export function NotificationBell({ userId }: { userId: string }) {
               ) : (
                 notifications.map((n) => {
                   const sessionId = n.data?.session_id;
+                  const SESSION_TYPES = new Set([
+                    "chat_message", "session_invite", "session_full",
+                    "session_cancelled", "session_alert",
+                    "participant_joined", "participant_left",
+                  ]);
+                  const href = sessionId
+                    ? `/sessions/${sessionId}`
+                    : SESSION_TYPES.has(n.type)
+                    ? "/my-sessions"
+                    : null;
+
                   const inner = (
                     <>
                       <div className="text-xs font-medium">{n.title}</div>
@@ -119,10 +130,11 @@ export function NotificationBell({ userId }: { userId: string }) {
                       </div>
                     </>
                   );
-                  return sessionId ? (
+
+                  return href ? (
                     <a
                       key={n.id}
-                      href={`/my-sessions`}
+                      href={href}
                       onClick={() => setOpen(false)}
                       className={cn(
                         "flex items-start gap-2 px-4 py-3 transition-colors hover:bg-[var(--surface-container-low)] cursor-pointer group",
