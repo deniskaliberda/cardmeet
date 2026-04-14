@@ -8,12 +8,10 @@ export const createLfgSchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
   location_label: z.string().optional(),
-  available_from: z.string().datetime({ message: "Ungültiges Datum" }),
-  available_to: z.string().datetime({ message: "Ungültiges Datum" }),
+  days_of_week: z.array(z.number().min(0).max(6)).min(1, "Mindestens ein Tag"),
+  time_from: z.coerce.number().min(0).max(23).default(18),
+  time_to: z.coerce.number().min(0).max(23).default(22),
 }).refine(
-  (d) => new Date(d.available_to) > new Date(d.available_from),
-  { message: "Ende muss nach Beginn liegen", path: ["available_to"] }
-).refine(
-  (d) => (new Date(d.available_to).getTime() - new Date(d.available_from).getTime()) >= 60 * 60 * 1000,
-  { message: "Mindestens 1 Stunde Verfügbarkeit", path: ["available_to"] }
+  (d) => d.time_to > d.time_from,
+  { message: "Ende muss nach Beginn liegen", path: ["time_to"] }
 );

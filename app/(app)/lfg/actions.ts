@@ -13,8 +13,9 @@ type CreateLfgInput = {
   lat: number;
   lng: number;
   location_label?: string;
-  available_from: string;
-  available_to: string;
+  days_of_week: number[];
+  time_from: number;
+  time_to: number;
 };
 
 export async function createLfgPost(input: CreateLfgInput) {
@@ -34,7 +35,15 @@ export async function createLfgPost(input: CreateLfgInput) {
 
   if ((count ?? 0) >= 3) return { error: "Maximal 3 aktive LFG-Posts erlaubt" };
 
-  // Insert the LFG post
+  // Calculate a representative available_from/to for the next matching day
+  const now = new Date();
+  const nextDay = findNextMatchingDay(parsed.data.days_of_week, now);
+  const availableFrom = new Date(nextDay);
+  availableFrom.setHours(parsed.data.time_from, 0, 0, 0);
+  const availableTo = new Date(nextDay);
+  availableTo.setHours(parsed.data.time_to, 0, 0, 0);
+
+  // Insert ONE LFG post covering all selected days
   const { data: post, error: insertError } = await supabase
     .from("lfg_posts")
     .insert({
@@ -46,8 +55,11 @@ export async function createLfgPost(input: CreateLfgInput) {
       lat: parsed.data.lat,
       lng: parsed.data.lng,
       location_label: parsed.data.location_label ?? null,
-      available_from: parsed.data.available_from,
-      available_to: parsed.data.available_to,
+      days_of_week: parsed.data.days_of_week,
+      time_from: parsed.data.time_from,
+      time_to: parsed.data.time_to,
+      available_from: availableFrom.toISOString(),
+      available_to: availableTo.toISOString(),
     })
     .select("id, tcg, format, power_level, lat, lng, location_label, available_from, available_to")
     .single();
@@ -64,17 +76,11 @@ export async function createLfgPost(input: CreateLfgInput) {
     return { success: true, status: "waiting" as const, postId: post.id };
   }
 
-  // Check overlap >= 60 minutes
+  // Verify time overlap >= 1 hour
   const validMatches = matches.filter((m: any) => {
-    const overlapStart = Math.max(
-      new Date(post.available_from).getTime(),
-      new Date(m.post_available_from).getTime()
-    );
-    const overlapEnd = Math.min(
-      new Date(post.available_to).getTime(),
-      new Date(m.post_available_to).getTime()
-    );
-    return (overlapEnd - overlapStart) >= 60 * 60 * 1000;
+    const overlapFrom = Math.max(parsed.data.time_from, m.post_available_from ? new Date(m.post_available_from).getHours() : 0);
+    const overlapTo = Math.min(parsed.data.time_to, m.post_available_to ? new Date(m.post_available_to).getHours() : 24);
+    return (overlapTo - overlapFrom) >= 1;
   });
 
   if (validMatches.length === 0) {
@@ -116,28 +122,20 @@ export async function createLfgPost(input: CreateLfgInput) {
   });
   const shop = shops?.[0] ?? null;
 
-  // Calculate scheduled_at from overlap window
-  const allFromTimes = [
-    new Date(post.available_from).getTime(),
-    ...confirmedMatches.map((m: any) => new Date(m.post_available_from).getTime()),
-  ];
-  const allToTimes = [
-    new Date(post.available_to).getTime(),
-    ...confirmedMatches.map((m: any) => new Date(m.post_available_to).getTime()),
-  ];
-  const overlapStart = Math.max(...allFromTimes);
-  const overlapEnd = Math.min(...allToTimes);
-  const scheduledAt = new Date((overlapStart + overlapEnd) / 2);
+  // Calculate scheduled_at — next matching day at midpoint of time window
+  const scheduledAt = new Date(nextDay);
+  const midHour = Math.floor((parsed.data.time_from + parsed.data.time_to) / 2);
+  scheduledAt.setHours(midHour, 0, 0, 0);
 
   // Get max_players from format config
   const tcgConfig = getTCG(post.tcg);
   const formatConfig = post.format ? getFormat(post.tcg, post.format) : tcgConfig?.formats[0];
   const maxPlayers = formatConfig?.playerCount.default ?? 4;
 
-  // Auto-create session
   const sessionLat = shop?.shop_lat ?? centroidLat;
   const sessionLng = shop?.shop_lng ?? centroidLng;
 
+  // Auto-create session
   const { data: session, error: sessionError } = await supabase
     .from("sessions")
     .insert({
@@ -178,12 +176,6 @@ export async function createLfgPost(input: CreateLfgInput) {
     .in("id", allPostIds);
 
   // Notify all matched players
-  const { data: poster } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
-    .single();
-
   await supabase.from("notifications").insert(
     allUserIds.map((uid: string) => ({
       user_id: uid,
@@ -197,6 +189,21 @@ export async function createLfgPost(input: CreateLfgInput) {
   revalidatePath("/dashboard");
   revalidatePath("/sessions");
   return { success: true, status: "matched" as const, sessionId: session.id };
+}
+
+function findNextMatchingDay(daysOfWeek: number[], from: Date): Date {
+  const currentDay = from.getDay(); // 0=Sun
+  for (let offset = 0; offset < 7; offset++) {
+    const candidateJsDay = (currentDay + offset) % 7;
+    // Convert JS day (0=Sun) to our format (0=Mo, 6=So)
+    const ourDay = candidateJsDay === 0 ? 6 : candidateJsDay - 1;
+    if (daysOfWeek.includes(ourDay)) {
+      const result = new Date(from);
+      result.setDate(from.getDate() + offset);
+      return result;
+    }
+  }
+  return from; // fallback
 }
 
 export async function cancelLfgPost(postId: string) {
