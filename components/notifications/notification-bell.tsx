@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +56,14 @@ export function NotificationBell({ userId }: { userId: string }) {
       supabase.removeChannel(channel);
     };
   }, [userId]);
+
+  async function deleteNotification(id: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const supabase = createClient();
+    await supabase.from("notifications").delete().eq("id", id);
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }
 
   async function markAllRead() {
     const supabase = createClient();
@@ -131,6 +139,17 @@ export function NotificationBell({ userId }: { userId: string }) {
                     </>
                   );
 
+                  const deleteBtn = (
+                    <button
+                      type="button"
+                      onClick={(e) => deleteNotification(n.id, e)}
+                      className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-0.5 rounded"
+                      title="Löschen"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  );
+
                   return href ? (
                     <a
                       key={n.id}
@@ -142,17 +161,21 @@ export function NotificationBell({ userId }: { userId: string }) {
                       )}
                     >
                       <div className="flex-1 min-w-0">{inner}</div>
-                      <span className="shrink-0 text-muted-foreground group-hover:text-primary transition-colors mt-0.5 text-xs">→</span>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        {deleteBtn}
+                        <span className="shrink-0 text-muted-foreground group-hover:text-primary transition-colors text-xs">→</span>
+                      </div>
                     </a>
                   ) : (
                     <div
                       key={n.id}
                       className={cn(
-                        "px-4 py-3 transition-colors",
+                        "flex items-start gap-2 px-4 py-3 transition-colors hover:bg-[var(--surface-container-low)] group",
                         !n.read && "bg-primary/5"
                       )}
                     >
-                      {inner}
+                      <div className="flex-1 min-w-0">{inner}</div>
+                      {deleteBtn}
                     </div>
                   );
                 })
