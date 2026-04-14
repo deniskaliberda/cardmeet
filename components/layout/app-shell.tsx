@@ -10,9 +10,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User } from "lucide-react";
+import { Compass, Store, Bookmark, User, Plus, LogOut } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { DmPanel } from "@/components/chat/dm-panel";
+import { cn } from "@/lib/utils";
 
 type AppUser = {
   id: string;
@@ -21,11 +22,19 @@ type AppUser = {
   avatarUrl?: string | null;
 };
 
-const NAV_ITEMS = [
-  { href: "/sessions", label: "🎴 Sessions" },
-  { href: "/my-sessions", label: "📋 Meine" },
-  { href: "/sessions/create", label: "➕ Neu" },
-  { href: "/profile", label: "👤 Profil" },
+const DESKTOP_NAV = [
+  { href: "/sessions", label: "Sessions", icon: Compass },
+  { href: "/shops", label: "Shops", icon: Store },
+  { href: "/my-sessions", label: "Meine", icon: Bookmark },
+  { href: "/sessions/create", label: "Erstellen", icon: Plus },
+  { href: "/profile", label: "Profil", icon: User },
+] as const;
+
+const MOBILE_NAV = [
+  { href: "/sessions", icon: Compass },
+  { href: "/shops", icon: Store },
+  { href: "/my-sessions", icon: Bookmark },
+  { href: "/profile", icon: User },
 ] as const;
 
 export function AppShell({
@@ -50,8 +59,8 @@ export function AppShell({
       {/* Floating navbar */}
       <header className="sticky top-2.5 z-50 px-4 sm:px-6">
         <nav
-          className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between rounded-[14px] border border-border bg-card/92 px-8 backdrop-blur-md"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)" }}
+          className="mx-auto flex h-14 max-w-screen-2xl items-center justify-between rounded-2xl border border-border bg-card/90 px-6 backdrop-blur-xl"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06)" }}
         >
           {/* Logo */}
           <Link
@@ -59,7 +68,7 @@ export function AppShell({
             className="text-primary"
             style={{
               fontFamily: "var(--font-mono), 'Fira Code', monospace",
-              fontSize: "1.35em",
+              fontSize: "1.25em",
               fontWeight: 300,
               letterSpacing: "-1.5px",
             }}
@@ -67,45 +76,35 @@ export function AppShell({
             CARDMEET
           </Link>
 
-          {/* Center tabs */}
+          {/* Center tabs — desktop only */}
           <div className="absolute left-1/2 -translate-x-1/2 hidden items-center gap-0.5 md:flex">
-            {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href;
+            {DESKTOP_NAV.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-lg px-5 py-2 text-sm font-medium transition-all"
-                  style={{
-                    background: isActive ? "var(--primary)" : "transparent",
-                    color: isActive ? "#fff" : "var(--muted-foreground)",
-                    letterSpacing: "-0.01em",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = "var(--background)";
-                      e.currentTarget.style.color = "var(--foreground)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = "transparent";
-                      e.currentTarget.style.color = "var(--muted-foreground)";
-                    }
-                  }}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition-all",
+                    isActive
+                      ? "bg-primary text-white shadow-[0_2px_8px_oklch(0.5_0.2_264/25%)]"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  )}
                 >
+                  <Icon className="h-3.5 w-3.5" />
                   {item.label}
                 </Link>
               );
             })}
           </div>
 
-          {/* Right: chat + bell + avatar + logout */}
+          {/* Right: chat + bell + avatar */}
           <div className="flex items-center gap-2">
             <DmPanel userId={user.id} />
             <NotificationBell userId={user.id} />
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-border bg-primary text-xs font-semibold text-white transition-colors hover:border-primary focus:outline-none">
+              <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white transition-all hover:shadow-[0_0_12px_oklch(0.5_0.2_264/30%)] focus:outline-none">
                 {user.username.slice(0, 2).toUpperCase()}
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -123,26 +122,46 @@ export function AppShell({
         </nav>
       </header>
 
-      {/* Main Content */}
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+      {/* Main Content — extra bottom padding on mobile for nav + FAB */}
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24 md:pb-6">
         {children}
       </main>
 
       <SiteFooter />
 
-      {/* Mobile Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card md:hidden">
+      {/* Floating Action Button — mobile only */}
+      <Link
+        href="/sessions/create"
+        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-[0_4px_20px_oklch(0.5_0.2_264/40%)] transition-all active:scale-95 md:hidden"
+        style={{ background: "linear-gradient(135deg, var(--primary), oklch(0.55 0.20 285))" }}
+      >
+        <Plus className="h-6 w-6" />
+      </Link>
+
+      {/* Mobile Bottom Nav — icon only, 4 items */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-xl md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
         <div className="flex items-center justify-around py-2">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
+          {MOBILE_NAV.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex flex-col items-center gap-1 px-3 py-1 text-xs"
-                style={{ color: isActive ? "var(--primary)" : "var(--muted-foreground)" }}
+                className="flex flex-col items-center gap-1 p-2 transition-colors active:scale-95"
               >
-                {item.label}
+                <Icon
+                  className={cn(
+                    "h-5 w-5 transition-colors",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}
+                />
+                {isActive && (
+                  <span className="h-1 w-1 rounded-full bg-primary" />
+                )}
               </Link>
             );
           })}

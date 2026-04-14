@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, CalendarDays, Clock, MapPin, Search, Store, Users, X } from "lucide-react";
+import { Calendar, CalendarDays, Clock, List, Map, MapPin, Search, Store, Users, X } from "lucide-react";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { useExplorerStore } from "@/lib/stores/explorer-store";
 import type { DateFilter } from "@/lib/stores/explorer-store";
 import type { MapSession } from "@/components/map/session-map";
+import { cn } from "@/lib/utils";
 
 const SessionMap = dynamic(
   () => import("@/components/map/session-map").then((m) => m.SessionMap),
@@ -79,11 +80,11 @@ export function LandingExplorer({
     toggleShopOnly,
   } = useExplorerStore();
 
+  const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const listRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const timeInputRef = useRef<HTMLInputElement>(null);
 
-  // TCG config for active selection
   const activeTcgConfig = activeTcg ? getTCG(activeTcg) : null;
   const activeFormatConfig = activeTcgConfig?.formats.find((f) => f.id === activeFormat);
   const powerLevels = activeFormatConfig?.powerLevels ?? [];
@@ -126,16 +127,47 @@ export function LandingExplorer({
   })() : null;
 
   return (
-    <div className="grid grid-cols-[3fr_7fr] gap-5" style={{ height: "600px" }}>
+    <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[3fr_7fr] lg:gap-5 lg:h-[calc(100vh-8rem)]">
+
+      {/* ── Mobile view toggle ─────────────────────────────── */}
+      <div className="flex gap-1 rounded-xl bg-card p-1 lg:hidden">
+        <button
+          onClick={() => setMobileView("list")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all",
+            mobileView === "list"
+              ? "bg-primary text-white shadow-sm"
+              : "text-muted-foreground"
+          )}
+        >
+          <List className="h-3.5 w-3.5" />
+          Liste
+        </button>
+        <button
+          onClick={() => setMobileView("map")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all",
+            mobileView === "map"
+              ? "bg-primary text-white shadow-sm"
+              : "text-muted-foreground"
+          )}
+        >
+          <Map className="h-3.5 w-3.5" />
+          Karte
+        </button>
+      </div>
 
       {/* ── Left panel ────────────────────────────────────── */}
-      <div className="flex min-h-0 flex-col gap-2.5">
+      <div className={cn(
+        "flex min-h-0 flex-col gap-2.5",
+        mobileView === "map" && "hidden lg:flex"
+      )}>
 
         {/* Location bar */}
         {locationBar}
 
         {/* Search */}
-        <div className="flex items-center gap-2 rounded-2xl border-2 border-border bg-card px-3 py-2" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-card/80 px-3 py-2.5 backdrop-blur-sm">
           <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <input
             type="text"
@@ -151,14 +183,14 @@ export function LandingExplorer({
           )}
         </div>
 
-        {/* Date filter */}
-        <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+        {/* Date filter — horizontal scroll on mobile */}
+        <div className="flex flex-shrink-0 items-center gap-1.5 overflow-x-auto scrollbar-none">
           {DATE_OPTIONS.map((opt) => (
             <FilterPill key={opt.id} label={opt.label} active={dateFilter === opt.id} onClick={() => setDateFilter(opt.id)} />
           ))}
           <div className="relative">
             <button type="button" title="Datum wählen" onClick={() => dateInputRef.current?.showPicker?.()}
-              className="flex h-[26px] w-[26px] items-center justify-center rounded-full border-2 transition-all"
+              className="flex h-[26px] w-[26px] items-center justify-center rounded-full border transition-all"
               style={specificDateLabel ? { background: "rgba(0,102,255,0.13)", borderColor: "var(--primary)", color: "var(--primary)" } : { background: "transparent", borderColor: "var(--border)", color: "var(--muted-foreground)" }}>
               <CalendarDays className="h-3 w-3" />
             </button>
@@ -175,13 +207,13 @@ export function LandingExplorer({
           <span className="text-[11px] text-muted-foreground font-medium">Ab</span>
           {fromMinutes !== null ? (
             <button type="button" onClick={() => setFromMinutes(null)}
-              className="flex items-center gap-1 rounded-full border-2 px-2.5 py-0.5 text-[11px] font-semibold transition-all"
+              className="flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-all"
               style={{ background: "rgba(0,102,255,0.13)", borderColor: "var(--primary)", color: "var(--primary)" }}>
               {minutesToLabel(fromMinutes)} Uhr <X className="h-2.5 w-2.5 opacity-70" />
             </button>
           ) : (
             <button type="button" onClick={() => timeInputRef.current?.showPicker?.()}
-              className="flex items-center gap-1 rounded-full border-2 border-dashed border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary cursor-pointer">
+              className="flex items-center gap-1 rounded-full border border-dashed border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary cursor-pointer">
               Uhrzeit wählen
             </button>
           )}
@@ -189,21 +221,21 @@ export function LandingExplorer({
             onChange={(e) => { if (e.target.value) { const [h, m] = e.target.value.split(":").map(Number); setFromMinutes(h * 60 + m); } }} />
         </div>
 
-        {/* TCG filter + shop filter */}
-        <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+        {/* TCG filter + shop filter — horizontal scroll on mobile */}
+        <div className="flex flex-shrink-0 items-center gap-1.5 overflow-x-auto scrollbar-none">
           <FilterPill label="Alle" active={!activeTcg} onClick={() => setTcgFilter(null)} />
           {TCG_LIST.map((tcg) => (
             <FilterPill key={tcg.id} label={tcg.shortName} active={activeTcg === tcg.id} color={tcg.color}
               onClick={() => setTcgFilter(activeTcg === tcg.id ? null : tcg.id)} />
           ))}
-          <span className="mx-0.5 h-4 w-px bg-border" />
+          <span className="mx-0.5 h-4 w-px shrink-0 bg-border" />
           <FilterPill label="🏪 Im Laden" active={shopOnly} color="#D97706"
             onClick={toggleShopOnly} />
         </div>
 
-        {/* Format filter (shown when TCG selected) */}
+        {/* Format filter */}
         {activeTcgConfig && (
-          <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+          <div className="flex flex-shrink-0 items-center gap-1.5 overflow-x-auto scrollbar-none">
             <FilterPill label="Alle Formate" active={!activeFormat} onClick={() => setFormatFilter(null)} small />
             {activeTcgConfig.formats.map((f) => (
               <FilterPill key={f.id} label={f.name} active={activeFormat === f.id} color={activeTcgConfig.color}
@@ -212,9 +244,9 @@ export function LandingExplorer({
           </div>
         )}
 
-        {/* Power level filter (shown when format has levels) */}
+        {/* Power level filter */}
         {powerLevels.length > 0 && (
-          <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+          <div className="flex flex-shrink-0 items-center gap-1.5 overflow-x-auto scrollbar-none">
             <FilterPill label="Alle Level" active={activePowerLevel === null} onClick={() => setPowerLevelFilter(null)} small />
             {powerLevels.map((pl) => (
               <FilterPill key={pl.level} label={`${pl.level} · ${pl.name}`} active={activePowerLevel === pl.level}
@@ -228,11 +260,14 @@ export function LandingExplorer({
           {filtered.length} Session{filtered.length !== 1 ? "s" : ""} gefunden
         </div>
 
-        {/* List */}
-        <div ref={listRef} className="sessions-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
+        {/* Session list */}
+        <div ref={listRef} className="sessions-scrollbar min-h-0 flex-1 overflow-y-auto pr-1 lg:max-h-none max-h-[60vh]">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <p className="font-medium">Keine Sessions gefunden</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5">
+                <Search className="h-6 w-6 text-primary" />
+              </div>
+              <p className="font-semibold">Keine Sessions gefunden</p>
               <p className="mt-1 text-sm text-muted-foreground">Andere Filter versuchen oder Session erstellen!</p>
             </div>
           ) : (
@@ -250,7 +285,10 @@ export function LandingExplorer({
       </div>
 
       {/* ── Map ───────────────────────────────────────────── */}
-      <div className="overflow-hidden rounded-2xl border-2 border-border" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <div className={cn(
+        "overflow-hidden rounded-2xl border border-border",
+        mobileView === "list" ? "hidden lg:block" : "h-[60vh] lg:h-auto"
+      )} style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
         <SessionMap sessions={filtered} center={center} radius={radius} />
       </div>
     </div>
@@ -262,10 +300,10 @@ export function LandingExplorer({
 function FilterPill({ label, active, color, onClick, small, closeable }: {
   label: string; active: boolean; color?: string; onClick: () => void; small?: boolean; closeable?: boolean;
 }) {
-  const ac = color ?? "#0066FF";
+  const ac = color ?? "var(--primary)";
   return (
     <button onClick={onClick}
-      className="flex items-center gap-1 rounded-full border-2 font-semibold transition-all cursor-pointer"
+      className="flex shrink-0 items-center gap-1 rounded-full border font-semibold transition-all cursor-pointer whitespace-nowrap"
       style={{ fontSize: small ? "10px" : "11px", padding: small ? "2px 10px" : "3px 12px",
         ...(active ? { background: `${ac}22`, borderColor: ac, color: ac } : { background: "transparent", borderColor: "var(--border)", color: "var(--muted-foreground)" }) }}>
       {label}{closeable && <span className="ml-0.5 text-[10px] opacity-70">✕</span>}
@@ -290,12 +328,26 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
 
   return (
     <a href={`/sessions/${session.id}`} data-session-id={session.id}
-      className="group relative w-full cursor-pointer overflow-hidden rounded-xl border-2 bg-card p-3.5 text-left transition-all duration-200 hover:translate-x-0.5 hover:border-primary hover:shadow-[0_4px_16px_rgba(0,102,255,0.08)] block"
-      style={{ borderColor: isSelected ? "var(--primary)" : "var(--border)", background: isSelected ? "rgba(0,102,255,0.04)" : "var(--card)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
+      className="group relative w-full cursor-pointer overflow-hidden rounded-xl border bg-card p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 block active:scale-[0.98]"
+      style={{
+        borderColor: isSelected ? "var(--primary)" : "var(--border)",
+        background: isSelected
+          ? `linear-gradient(135deg, ${tcg?.color ?? "#0066FF"}08, var(--card))`
+          : `linear-gradient(135deg, ${tcg?.color ?? "#666"}05, var(--card))`,
+        boxShadow: isSelected
+          ? `0 4px 16px ${tcg?.color ?? "#0066FF"}15`
+          : "0 1px 4px rgba(0,0,0,0.06)",
+      }}
       onMouseEnter={onHoverStart} onMouseLeave={onHoverEnd}>
-      <span className="absolute left-0 top-0 h-full w-[3px] rounded-l-xl bg-primary transition-opacity duration-200 group-hover:opacity-100"
-        style={{ opacity: isSelected ? 1 : 0 }} aria-hidden />
-      <div className="mb-2">
+
+      {/* Left color bar */}
+      <span
+        className="absolute left-0 top-0 h-full w-1 rounded-l-xl transition-all duration-200"
+        style={{ backgroundColor: tcg?.color ?? "var(--primary)", opacity: isSelected ? 1 : 0.5 }}
+        aria-hidden
+      />
+
+      <div className="mb-2 pl-1">
         <div className="flex items-center gap-1.5 mb-0.5">
           <p className="truncate text-sm font-medium flex-1">{session.title}</p>
           {((session as any).shop_id || (session as any).is_venue) && (
@@ -308,7 +360,8 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
           {tcg?.shortName ?? session.tcg}: {session.format}
         </p>
       </div>
-      <div className="mb-2.5 flex flex-col gap-1">
+
+      <div className="mb-2.5 flex flex-col gap-1 pl-1">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Calendar className="h-3 w-3 flex-shrink-0" />
           <span>{format(scheduledDate, "EEE, d. MMM · HH:mm", { locale: de })} Uhr</span>
@@ -320,11 +373,12 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between border-t border-border pt-2.5">
+
+      <div className="flex items-center justify-between border-t border-border/50 pt-2.5 pl-1">
         <div className="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
           style={{ background: slotsStyle.bg, borderColor: slotsStyle.border, color: slotsStyle.color }}>
           <Users className="h-3 w-3" />
-          {isFull ? "Session voll" : `${free} von ${session.max_players} frei`}
+          {isFull ? "Voll" : `${free}/${session.max_players} frei`}
         </div>
         <a href={`/players/${(session as any).host_id}`} onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">

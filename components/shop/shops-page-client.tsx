@@ -20,14 +20,18 @@ export function ShopsPageClient({ shops }: Props) {
   return (
     <div className="mx-auto max-w-screen-xl px-4 py-6 sm:px-6">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Store className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-bold text-foreground">Game Shops</h1>
+      <div className="mb-6 rounded-2xl p-5" style={{ background: "linear-gradient(135deg, oklch(0.62 0.22 264 / 15%), oklch(0.75 0.18 160 / 10%))" }}>
+        <div className="flex items-center gap-2.5 mb-1">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20">
+            <Store className="h-4.5 w-4.5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-foreground">Game Shops</h1>
+            <p className="text-xs text-muted-foreground">
+              Finde Spieleläden in deiner Nähe — dein Hub für TCG-Abende
+            </p>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Finde Spieleläden in deiner Nähe — dein Hub für TCG-Abende
-        </p>
       </div>
 
       {/* TCG filter pills */}
@@ -79,8 +83,12 @@ export function ShopsPageClient({ shops }: Props) {
       </div>
 
       {filtered.length === 0 && (
-        <div className="mt-12 text-center text-sm text-muted-foreground">
-          Keine Shops gefunden.
+        <div className="mt-12 flex flex-col items-center text-center">
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5">
+            <Store className="h-6 w-6 text-primary" />
+          </div>
+          <p className="font-semibold">Keine Shops gefunden</p>
+          <p className="mt-1 text-sm text-muted-foreground">Versuche einen anderen Filter.</p>
         </div>
       )}
     </div>
