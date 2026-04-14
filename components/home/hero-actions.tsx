@@ -1,34 +1,60 @@
 import Link from "next/link";
-import { Search, Plus } from "lucide-react";
+import { Gamepad2, MapPin, Store } from "lucide-react";
 
-export function HeroActions({ openSessionCount }: { openSessionCount: number }) {
+type Props = {
+  openSessionCount: number;
+  nearbyCount: number;
+  shopCount: number;
+};
+
+export function QuickStats({ openSessionCount, nearbyCount, shopCount }: Props) {
+  const stats = [
+    {
+      href: "/sessions",
+      icon: Gamepad2,
+      value: openSessionCount,
+      label: "Sessions offen",
+      color: "oklch(0.62 0.22 264)",
+    },
+    {
+      href: "/sessions",
+      icon: MapPin,
+      value: nearbyCount,
+      label: "In deiner Nähe",
+      color: "oklch(0.75 0.18 160)",
+    },
+    {
+      href: "/shops",
+      icon: Store,
+      value: shopCount,
+      label: "Shops aktiv",
+      color: "oklch(0.664 0.196 41)",
+    },
+  ];
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <Link
-        href="/sessions"
-        className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/10 p-4 transition-transform hover:scale-[1.02] active:scale-[0.98]"
-      >
-        <Search className="h-7 w-7 text-primary" />
-        <div>
-          <p className="text-base font-bold">Spiel finden</p>
-          <p className="text-xs text-muted-foreground">
-            {openSessionCount > 0
-              ? `${openSessionCount} offene ${openSessionCount === 1 ? "Session" : "Sessions"}`
-              : "Sessions entdecken"}
-          </p>
-        </div>
-      </Link>
-
-      <Link
-        href="/sessions/create"
-        className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 to-accent/15 p-4 transition-transform hover:scale-[1.02] active:scale-[0.98]"
-      >
-        <Plus className="h-7 w-7 text-primary" />
-        <div>
-          <p className="text-base font-bold">Spiel erstellen</p>
-          <p className="text-xs text-muted-foreground">Starte eine Runde</p>
-        </div>
-      </Link>
+    <div className="grid grid-cols-3 gap-2.5">
+      {stats.map((stat) => {
+        const Icon = stat.icon;
+        return (
+          <Link
+            key={stat.label}
+            href={stat.href}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-3.5 text-center transition-all hover:border-primary/40 hover:shadow-md active:scale-[0.97]"
+          >
+            <Icon className="h-4.5 w-4.5 text-muted-foreground" />
+            <span
+              className="font-heading text-2xl font-bold leading-none"
+              style={{ color: stat.color }}
+            >
+              {stat.value}
+            </span>
+            <span className="text-xs text-muted-foreground leading-tight">
+              {stat.label}
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
 }

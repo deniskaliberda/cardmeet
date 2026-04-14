@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { HeroActions } from "@/components/home/hero-actions";
+import { QuickStats } from "@/components/home/hero-actions";
 import { LfgButton } from "@/components/home/lfg-button";
 import { LfgActiveBadge } from "@/components/lfg/lfg-active-badge";
-import { NearbySessions } from "@/components/home/nearby-sessions";
 import { UpcomingSessions } from "@/components/home/upcoming-sessions";
 import { FriendsPlaying } from "@/components/home/friends-playing";
 import { TcgShortcuts } from "@/components/home/tcg-shortcuts";
@@ -96,7 +95,8 @@ export function HomeView({
 
       {/* Overview tab */}
       {activeTab === "overview" && (
-        <div className="space-y-8 max-w-2xl">
+        <div className="space-y-6 max-w-2xl">
+          {/* 1. LFG Hero — the main feature */}
           <LfgButton
             preferredTcgs={preferredTcgs}
             userLat={userLat}
@@ -104,16 +104,25 @@ export function HomeView({
             userCity={userCity}
             activeLfgCount={activeLfgPosts.length}
           />
+
+          {/* 2. Active LFG posts */}
           <LfgActiveBadge posts={activeLfgPosts} />
-          <FriendsPlaying sessions={friendsSessions} />
-          <HeroActions openSessionCount={openCount} />
-          {allUpcoming.length > 0 && <UpcomingSessions sessions={allUpcoming} />}
-          <TcgShortcuts />
-          <NearbySessions
-            sessions={nearbyMapped}
-            currentUserId={currentUserId}
-            joinedSessionIds={joinedSessionIds}
+
+          {/* 3. Quick Stats — sessions, nearby, shops */}
+          <QuickStats
+            openSessionCount={openCount}
+            nearbyCount={nearbyMapped.length}
+            shopCount={9}
           />
+
+          {/* 4. TCG Shortcuts */}
+          <TcgShortcuts />
+
+          {/* 5. Friends playing */}
+          <FriendsPlaying sessions={friendsSessions} />
+
+          {/* 6. Upcoming sessions */}
+          {allUpcoming.length > 0 && <UpcomingSessions sessions={allUpcoming} />}
         </div>
       )}
 
