@@ -39,9 +39,10 @@ export default async function CreateSessionPage({
   }
 
   // Load shops for the location picker
+  // lat/lng are generated columns (ST_Y/ST_X) — querying location directly returns WKB hex
   const { data: shopsData } = await supabase
     .from("shops")
-    .select("id, slug, name, address, city, district, tcgs, location")
+    .select("id, slug, name, address, city, district, tcgs, lat, lng")
     .eq("has_play_space", true)
     .order("name");
 
@@ -53,8 +54,8 @@ export default async function CreateSessionPage({
     city: s.city,
     district: s.district,
     tcgs: s.tcgs ?? [],
-    lat: s.location ? (s.location as any).coordinates?.[1] ?? 52.52 : 52.52,
-    lng: s.location ? (s.location as any).coordinates?.[0] ?? 13.405 : 13.405,
+    lat: s.lat ?? 52.52,
+    lng: s.lng ?? 13.405,
   }));
 
   return (
