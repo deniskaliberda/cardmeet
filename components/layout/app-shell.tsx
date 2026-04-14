@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Compass, Store, Bookmark, User, Plus, LogOut } from "lucide-react";
+import { Home, Compass, Store, Bookmark, User, Plus, LogOut } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { DmPanel } from "@/components/chat/dm-panel";
 import { cn } from "@/lib/utils";
@@ -23,17 +23,17 @@ type AppUser = {
 };
 
 const DESKTOP_NAV = [
+  { href: "/dashboard", label: "Home", icon: Home },
   { href: "/sessions", label: "Sessions", icon: Compass },
   { href: "/shops", label: "Shops", icon: Store },
-  { href: "/my-sessions", label: "Meine", icon: Bookmark },
   { href: "/sessions/create", label: "Erstellen", icon: Plus },
   { href: "/profile", label: "Profil", icon: User },
 ] as const;
 
 const MOBILE_NAV = [
+  { href: "/dashboard", icon: Home },
   { href: "/sessions", icon: Compass },
   { href: "/shops", icon: Store },
-  { href: "/my-sessions", icon: Bookmark },
   { href: "/profile", icon: User },
 ] as const;
 
@@ -64,7 +64,7 @@ export function AppShell({
         >
           {/* Logo */}
           <Link
-            href="/sessions"
+            href="/dashboard"
             className="text-primary"
             style={{
               fontFamily: "var(--font-mono), 'Fira Code', monospace",
