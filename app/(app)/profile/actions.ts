@@ -39,3 +39,23 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/profile");
   return { success: true };
 }
+
+export async function updateLgsProfile(data: {
+  is_venue: boolean;
+  venue_name: string;
+  venue_website: string;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet" };
+
+  const { error } = await supabase.from("profiles").update({
+    is_venue: data.is_venue,
+    venue_name: data.is_venue ? data.venue_name.trim() || null : null,
+    venue_website: data.is_venue ? data.venue_website.trim() || null : null,
+  }).eq("id", user.id);
+
+  if (error) return { error: error.message };
+  revalidatePath("/profile");
+  return { success: true };
+}

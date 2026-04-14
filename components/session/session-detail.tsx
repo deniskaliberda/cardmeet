@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { MapPin, Users, Calendar, Clock, Share2 } from "lucide-react";
 import { getTCG, getPowerLevel } from "@/lib/config/tcg";
-import { joinSession, leaveSession, cancelSession } from "@/app/(app)/sessions/actions";
+import { joinSession, leaveSession, cancelSession, joinWaitlist, leaveWaitlist } from "@/app/(app)/sessions/actions";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -47,6 +47,8 @@ type SessionDetailProps = {
   currentUserId: string | null;
   isHost: boolean;
   isParticipant: boolean;
+  isOnWaitlist?: boolean;
+  waitlistCount?: number;
 };
 
 export function SessionDetail({
@@ -55,6 +57,8 @@ export function SessionDetail({
   currentUserId,
   isHost,
   isParticipant,
+  isOnWaitlist = false,
+  waitlistCount = 0,
 }: SessionDetailProps) {
   const router = useRouter();
   const tcg = getTCG(session.tcg);
@@ -175,7 +179,8 @@ export function SessionDetail({
           <h3 className="mb-2 text-sm font-medium">Teilnehmer</h3>
           <div className="flex flex-wrap gap-2">
             {/* Host */}
-            <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm">
+            <a href={`/players/${session.profiles?.id}`}
+              className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:border-primary transition-colors">
               <Avatar className="h-6 w-6">
                 <AvatarFallback className="text-xs">
                   {session.profiles?.username?.slice(0, 2).toUpperCase()}
@@ -183,31 +188,55 @@ export function SessionDetail({
               </Avatar>
               <span>{session.profiles?.username}</span>
               <Badge variant="secondary" className="text-xs">Host</Badge>
-            </div>
+            </a>
             {/* Participants */}
             {participants.map((p) => (
-              <div
-                key={p.user_id}
-                className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm"
-              >
+              <a key={p.user_id} href={`/players/${p.user_id}`}
+                className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:border-primary transition-colors">
                 <Avatar className="h-6 w-6">
                   <AvatarFallback className="text-xs">
                     {p.profiles?.username?.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <span>{p.profiles?.username}</span>
-              </div>
+              </a>
             ))}
           </div>
         </div>
 
         {/* Actions */}
         {!isCancelled && (
-          <div className="flex gap-2">
-            {canJoin && (
+          <div className="flex gap-2 flex-col">
+            {canJoin && !isFull && (
               <Button onClick={handleJoin} className="flex-1">
                 Beitreten
               </Button>
+            )}
+            {isFull && !isParticipant && !isHost && currentUserId && (
+              <div className="space-y-1.5">
+                {isOnWaitlist ? (
+                  <Button variant="outline" className="w-full" onClick={async () => {
+                    const r = await leaveWaitlist(session.id);
+                    if (r?.error) toast.error(r.error);
+                    else toast.success("Von Warteliste entfernt");
+                  }}>
+                    ✓ Auf Warteliste · Entfernen
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="w-full" onClick={async () => {
+                    const r = await joinWaitlist(session.id);
+                    if (r?.error) toast.error(r.error);
+                    else toast.success("Du bist auf der Warteliste");
+                  }}>
+                    Auf Warteliste setzen
+                  </Button>
+                )}
+                {waitlistCount > 0 && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    {waitlistCount} {waitlistCount === 1 ? "Person" : "Personen"} auf der Warteliste
+                  </p>
+                )}
+              </div>
             )}
             {isParticipant && !isHost && (
               <Button variant="outline" onClick={handleLeave}>

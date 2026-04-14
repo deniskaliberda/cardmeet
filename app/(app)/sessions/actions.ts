@@ -58,6 +58,25 @@ export async function leaveSession(sessionId: string) {
 
   if (error) return { error: error.message };
 
+  // Notify first person on waitlist
+  const { data: next } = await (supabase as any)
+    .from("session_waitlist")
+    .select("user_id")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (next) {
+    const { data: sess } = await supabase.from("sessions").select("title").eq("id", sessionId).single();
+    await supabase.from("notifications").insert({
+      user_id: next.user_id,
+      type: "session_join",
+      title: "Platz frei!",
+      body: sess?.title ?? "Eine Session hat einen freien Platz",
+    });
+  }
+
   revalidatePath(`/sessions/${sessionId}`);
   revalidatePath("/sessions");
   return { success: true };
@@ -204,6 +223,39 @@ export async function cancelSession(sessionId: string) {
   return { success: true };
 }
 
+export async function joinWaitlist(sessionId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet" };
+
+  const { error } = await (supabase as any).from("session_waitlist").insert({
+    session_id: sessionId,
+    user_id: user.id,
+  });
+  if (error) {
+    if (error.code === "23505") return { error: "Du stehst bereits auf der Warteliste" };
+    return { error: error.message };
+  }
+  revalidatePath(`/sessions/${sessionId}`);
+  return { success: true };
+}
+
+export async function leaveWaitlist(sessionId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht angemeldet" };
+
+  const { error } = await (supabase as any)
+    .from("session_waitlist")
+    .delete()
+    .eq("session_id", sessionId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+  revalidatePath(`/sessions/${sessionId}`);
+  return { success: true };
+}
+
 export async function updateSession(
   sessionId: string,
   data: {
@@ -214,6 +266,7 @@ export async function updateSession(
     location_name: string;
     power_level: number | null;
     entry_fee_cents: number;
+    recurrence: "none" | "weekly" | "biweekly" | "monthly";
   }
 ) {
   const supabase = await createClient();
@@ -239,6 +292,7 @@ export async function updateSession(
       location_name: data.location_name.trim() || null,
       power_level: data.power_level,
       entry_fee_cents: data.entry_fee_cents,
+      recurrence: data.recurrence,
     })
     .eq("id", sessionId)
     .eq("host_id", user.id);

@@ -44,6 +44,7 @@ type Session = {
   scheduled_at: string;
   host_id: string;
   entry_fee_cents?: number | null;
+  recurrence?: string | null;
   profiles?: { id?: string; username: string; avatar_url: string | null } | null;
 };
 
@@ -420,6 +421,11 @@ function SessionDetailColumn({
           {isPast && (
             <span className="rounded-lg bg-[#006b5c]/15 text-[#006b5c] px-2.5 py-0.5 text-[11px] font-medium">
               ✓ Abgeschlossen
+            </span>
+          )}
+          {session.recurrence && session.recurrence !== "none" && (
+            <span className="rounded-lg bg-primary/10 text-primary px-2.5 py-0.5 text-[11px] font-medium">
+              🔁 {{ weekly: "Wöchentlich", biweekly: "2-wöchentlich", monthly: "Monatlich" }[session.recurrence] ?? ""}
             </span>
           )}
         </div>

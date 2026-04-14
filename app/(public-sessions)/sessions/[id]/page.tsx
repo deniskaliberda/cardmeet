@@ -71,6 +71,14 @@ export default async function SessionPage({
   const isParticipant = participants?.some((p) => p.user_id === user?.id) ?? false;
   const canChat = isHost || isParticipant;
 
+  // Waitlist
+  const { data: waitlist } = await (supabase as any)
+    .from("session_waitlist")
+    .select("user_id")
+    .eq("session_id", id);
+  const isOnWaitlist = waitlist?.some((w: any) => w.user_id === user?.id) ?? false;
+  const waitlistCount = waitlist?.length ?? 0;
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <SessionDetail
@@ -79,6 +87,8 @@ export default async function SessionPage({
         currentUserId={user?.id ?? null}
         isHost={isHost}
         isParticipant={isParticipant}
+        isOnWaitlist={isOnWaitlist}
+        waitlistCount={waitlistCount}
       />
 
       {canChat && (

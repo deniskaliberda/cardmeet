@@ -290,7 +290,14 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
       <span className="absolute left-0 top-0 h-full w-[3px] rounded-l-xl bg-primary transition-opacity duration-200 group-hover:opacity-100"
         style={{ opacity: isSelected ? 1 : 0 }} aria-hidden />
       <div className="mb-2">
-        <p className="truncate text-sm font-medium">{session.title}</p>
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <p className="truncate text-sm font-medium flex-1">{session.title}</p>
+          {(session as any).is_venue && (
+            <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+              🏪 LGS
+            </span>
+          )}
+        </div>
         <p className="text-[11px]" style={{ color: tcg?.color ?? "#6B7280", fontFamily: "var(--font-mono), 'Fira Code', monospace", fontWeight: 300 }}>
           {tcg?.shortName ?? session.tcg}: {session.format}
         </p>
@@ -313,12 +320,13 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
           <Users className="h-3 w-3" />
           {isFull ? "Session voll" : `${free} von ${session.max_players} frei`}
         </div>
-        <div className="flex items-center gap-1.5">
+        <a href={`/players/${(session as any).host_id}`} onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
             {(session.host_username ?? "??").slice(0, 2).toUpperCase()}
           </div>
           <span className="text-xs font-medium">{session.host_username ?? "Unbekannt"}</span>
-        </div>
+        </a>
       </div>
     </button>
   );

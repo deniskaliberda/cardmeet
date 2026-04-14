@@ -24,6 +24,7 @@ type Session = {
   location_name?: string | null;
   scheduled_at: string;
   entry_fee_cents?: number | null;
+  recurrence?: string | null;
 };
 
 export function EditSessionForm({
@@ -53,6 +54,9 @@ export function EditSessionForm({
   const [feeEuros, setFeeEuros] = useState(
     initialFee > 0 ? (initialFee / 100).toFixed(2) : ""
   );
+  const [recurrence, setRecurrence] = useState<"none"|"weekly"|"biweekly"|"monthly">(
+    (session.recurrence as any) ?? "none"
+  );
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -69,6 +73,7 @@ export function EditSessionForm({
         location_name: locationName,
         power_level: powerLevel,
         entry_fee_cents,
+        recurrence,
       });
       if (result?.error) {
         toast.error(result.error);
@@ -230,6 +235,29 @@ export function EditSessionForm({
             z.B. Raummiete oder Turnier-Eintritt
           </p>
         )}
+      </div>
+
+      {/* Recurrence */}
+      <div className="space-y-1.5">
+        <Label className="text-xs">Wiederholung</Label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {([
+            { id: "none", label: "Einmalig" },
+            { id: "weekly", label: "Wöchentlich" },
+            { id: "biweekly", label: "Alle 2 Wochen" },
+            { id: "monthly", label: "Monatlich" },
+          ] as const).map((opt) => (
+            <button key={opt.id} type="button" onClick={() => setRecurrence(opt.id)}
+              className={cn(
+                "rounded-xl border-2 py-2 text-xs font-medium transition-all cursor-pointer",
+                recurrence === opt.id
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:border-primary/50"
+              )}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Power Level */}

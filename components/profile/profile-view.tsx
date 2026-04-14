@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Star, Edit, Shield, Camera, Plus } from "lucide-react";
+import { PushToggle } from "@/components/notifications/push-toggle";
 import { getTCG } from "@/lib/config/tcg";
 import { TCGIcon } from "@/components/icons/tcg-icons";
 import { ReviewList } from "@/components/review/review-list";
@@ -14,6 +15,7 @@ import { AddFriendSearch } from "@/components/friends/add-friend-search";
 import { AlertCard } from "@/components/alerts/alert-card";
 import { CreateAlertForm } from "@/components/alerts/create-alert-form";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { LgsForm } from "@/components/profile/lgs-form";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -29,6 +31,9 @@ type Profile = {
   review_count?: number | null;
   session_count?: number | null;
   friend_count?: number | null;
+  is_venue?: boolean | null;
+  venue_name?: string | null;
+  venue_website?: string | null;
 };
 
 const TABS = [
@@ -398,10 +403,11 @@ function SettingsTab({
         )}
       </div>
 
-      {/* Notification settings (UI preview) */}
+      {/* Notification settings */}
       <div>
         <h3 className="text-sm font-semibold mb-3">Benachrichtigungen</h3>
         <div className="flex flex-col gap-2">
+          <PushToggle userId={profile.id} />
           {[
             {
               label: "Email-Benachrichtigungen",
@@ -427,6 +433,15 @@ function SettingsTab({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* LGS / Spielladen */}
+      <div>
+        <h3 className="text-sm font-semibold mb-1">🏪 Spielladen-Profil</h3>
+        <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+          Betreibst du einen Spielladen? Aktiviere das Venue-Profil damit deine Sessions als offizielle LGS-Events hervorgehoben werden.
+        </p>
+        <LgsForm profile={profile} />
       </div>
 
       {/* DSGVO / Datenverwaltung */}
