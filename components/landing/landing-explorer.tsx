@@ -283,10 +283,10 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
     : { bg: "rgba(0,168,120,0.08)", border: "rgba(0,168,120,0.25)", color: "#00A878" };
 
   return (
-    <button type="button" data-session-id={session.id}
-      className="group relative w-full cursor-pointer overflow-hidden rounded-xl border-2 bg-card p-3.5 text-left transition-all duration-200 hover:translate-x-0.5 hover:border-primary hover:shadow-[0_4px_16px_rgba(0,102,255,0.08)]"
+    <a href={`/sessions/${session.id}`} data-session-id={session.id}
+      className="group relative w-full cursor-pointer overflow-hidden rounded-xl border-2 bg-card p-3.5 text-left transition-all duration-200 hover:translate-x-0.5 hover:border-primary hover:shadow-[0_4px_16px_rgba(0,102,255,0.08)] block"
       style={{ borderColor: isSelected ? "var(--primary)" : "var(--border)", background: isSelected ? "rgba(0,102,255,0.04)" : "var(--card)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
-      onClick={onSelect} onMouseEnter={onHoverStart} onMouseLeave={onHoverEnd}>
+      onMouseEnter={onHoverStart} onMouseLeave={onHoverEnd}>
       <span className="absolute left-0 top-0 h-full w-[3px] rounded-l-xl bg-primary transition-opacity duration-200 group-hover:opacity-100"
         style={{ opacity: isSelected ? 1 : 0 }} aria-hidden />
       <div className="mb-2">
@@ -328,6 +328,6 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
           <span className="text-xs font-medium">{session.host_username ?? "Unbekannt"}</span>
         </a>
       </div>
-    </button>
+    </a>
   );
 }
