@@ -11,12 +11,12 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, city, lat, lng")
+    .select("username, city, city_lat, city_lng, preferred_tcgs")
     .eq("id", user.id)
     .single();
 
-  const userLat = (profile as any)?.lat ?? 52.52;
-  const userLng = (profile as any)?.lng ?? 13.405;
+  const userLat = (profile as any)?.city_lat ?? 52.52;
+  const userLng = (profile as any)?.city_lng ?? 13.405;
   const now = new Date().toISOString();
 
   const [
@@ -26,6 +26,7 @@ export default async function DashboardPage() {
     { count: openCount },
     { data: hostedAll },
     { data: joinedAll },
+    { data: activeLfgPosts },
     { data: friendships },
   ] = await Promise.all([
     supabase.rpc("nearby_sessions", { p_lat: userLat, p_lng: userLng, radius_km: 25 }).limit(5),
@@ -63,6 +64,14 @@ export default async function DashboardPage() {
       .select("session_id")
       .eq("user_id", user.id)
       .eq("status", "joined"),
+
+    // Active LFG posts for current user
+    supabase
+      .from("lfg_posts")
+      .select("id, tcg, format, available_from, available_to, location_label, status")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("created_at", { ascending: false }),
 
     // Friends for invite
     supabase
@@ -155,6 +164,11 @@ export default async function DashboardPage() {
       allUpcoming={allUpcoming}
       nearbyMapped={nearbyMapped}
       joinedSessionIds={joinedSessionIds}
+      activeLfgPosts={activeLfgPosts ?? []}
+      preferredTcgs={(profile as any)?.preferred_tcgs ?? []}
+      userLat={userLat}
+      userLng={userLng}
+      userCity={profile?.city ?? "Berlin"}
       mySessionsUpcoming={myUpcoming}
       mySessionsPast={myPast}
       initialSessionId={firstSession?.id ?? null}

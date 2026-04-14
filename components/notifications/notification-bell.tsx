@@ -118,6 +118,7 @@ export function NotificationBell({ userId }: { userId: string }) {
                     "chat_message", "session_invite", "session_full",
                     "session_cancelled", "session_alert",
                     "participant_joined", "participant_left",
+                    "lfg_match",
                   ]);
                   const href = sessionId
                     ? `/sessions/${sessionId}`

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { HeroActions } from "@/components/home/hero-actions";
+import { LfgButton } from "@/components/home/lfg-button";
+import { LfgActiveBadge } from "@/components/lfg/lfg-active-badge";
 import { NearbySessions } from "@/components/home/nearby-sessions";
 import { UpcomingSessions } from "@/components/home/upcoming-sessions";
 import { TcgShortcuts } from "@/components/home/tcg-shortcuts";
@@ -15,6 +17,12 @@ type Props = {
   allUpcoming: any[];
   nearbyMapped: any[];
   joinedSessionIds: Set<string>;
+  // LFG data
+  activeLfgPosts?: any[];
+  preferredTcgs?: string[];
+  userLat?: number;
+  userLng?: number;
+  userCity?: string;
   // Meine Sessions data
   mySessionsUpcoming: any[];
   mySessionsPast: any[];
@@ -39,6 +47,11 @@ export function HomeView({
   allUpcoming,
   nearbyMapped,
   joinedSessionIds,
+  activeLfgPosts = [],
+  preferredTcgs,
+  userLat,
+  userLng,
+  userCity,
   mySessionsUpcoming,
   mySessionsPast,
   initialSessionId,
@@ -81,6 +94,14 @@ export function HomeView({
       {/* Overview tab */}
       {activeTab === "overview" && (
         <div className="space-y-8 max-w-2xl">
+          <LfgButton
+            preferredTcgs={preferredTcgs}
+            userLat={userLat}
+            userLng={userLng}
+            userCity={userCity}
+            activeLfgCount={activeLfgPosts.length}
+          />
+          <LfgActiveBadge posts={activeLfgPosts} />
           <HeroActions openSessionCount={openCount} />
           {allUpcoming.length > 0 && <UpcomingSessions sessions={allUpcoming} />}
           <TcgShortcuts />
