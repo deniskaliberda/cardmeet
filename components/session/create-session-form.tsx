@@ -8,8 +8,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { createSession } from "@/app/(app)/sessions/create/actions";
 import { toast } from "sonner";
-import { Check, ChevronLeft, MapPin, Minus, Plus, UserPlus } from "lucide-react";
+import { Check, ChevronLeft, MapPin, Minus, Plus, UserPlus, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type ShopOption = {
+  id: string;
+  slug: string;
+  name: string;
+  address: string;
+  city: string;
+  district: string | null;
+  tcgs: string[];
+  lat: number;
+  lng: number;
+};
 
 type StepId =
   | "tcg"
@@ -46,7 +58,15 @@ type Friend = {
   avatar_url: string | null;
 };
 
-export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
+export function CreateSessionForm({
+  friends = [],
+  shops = [],
+  preselectedShopSlug,
+}: {
+  friends?: Friend[];
+  shops?: ShopOption[];
+  preselectedShopSlug?: string;
+}) {
   const [step, setStep] = useState<StepId>("tcg");
   const [tcgId, setTcgId] = useState("");
   const [formatId, setFormatId] = useState("");
@@ -56,8 +76,24 @@ export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
   const [description, setDescription] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [locationName, setLocationName] = useState("");
+  const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
 
   const [invitedFriendIds, setInvitedFriendIds] = useState<string[]>([]);
+
+  // Pre-select shop from URL param
+  useEffect(() => {
+    if (preselectedShopSlug && shops.length > 0) {
+      const shop = shops.find((s) => s.slug === preselectedShopSlug);
+      if (shop) {
+        setSelectedShopId(shop.id);
+        setResolvedLat(String(shop.lat));
+        setResolvedLng(String(shop.lng));
+        setResolvedCity(shop.city);
+        setLocationLabel(shop.name);
+        setLocationName(shop.name);
+      }
+    }
+  }, [preselectedShopSlug, shops]);
 
   const [locationQuery, setLocationQuery] = useState("");
   const [locationResults, setLocationResults] = useState<NominatimResult[]>([]);
@@ -135,6 +171,7 @@ export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
     formData.set("city", resolvedCity || "Berlin");
     formData.set("postal_code", resolvedPostalCode);
     formData.set("location_name", locationName);
+    if (selectedShopId) formData.set("shop_id", selectedShopId);
     if (invitedFriendIds.length > 0) {
       formData.set("invited_friend_ids", invitedFriendIds.join(","));
     }
@@ -508,8 +545,59 @@ export function CreateSessionForm({ friends = [] }: { friends?: Friend[] }) {
           <div className="space-y-5">
             <StepHeading
               title="Wo trefft ihr euch?"
-              sub="Stadt, PLZ oder Adresse eingeben"
+              sub="Wähle einen Spieleladen oder gib eine Adresse ein"
             />
+
+            {/* Shop quick-select */}
+            {shops.length > 0 && !locationLabel && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Store className="h-3.5 w-3.5" />
+                  Spieleläden
+                </div>
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                  {shops
+                    .filter((s) => !tcgId || s.tcgs.includes(tcgId))
+                    .slice(0, 6)
+                    .map((shop) => (
+                      <button
+                        key={shop.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedShopId(shop.id);
+                          setResolvedLat(String(shop.lat));
+                          setResolvedLng(String(shop.lng));
+                          setResolvedCity(shop.city);
+                          setLocationLabel(shop.name);
+                          setLocationName(shop.name);
+                          setResolvedPostalCode("");
+                        }}
+                        className="flex items-center gap-2 rounded-xl border-2 border-border bg-card p-2.5 text-left transition-all hover:border-primary/40 cursor-pointer"
+                      >
+                        <Store className="h-4 w-4 shrink-0 text-primary" />
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-medium">{shop.name}</p>
+                          {shop.district && (
+                            <p className="truncate text-[10px] text-muted-foreground">
+                              {shop.district}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                </div>
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-[10px]">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      oder Adresse eingeben
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {!locationLabel ? (
               <div className="relative">

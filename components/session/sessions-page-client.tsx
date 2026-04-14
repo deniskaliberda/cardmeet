@@ -32,6 +32,8 @@ function mapSession(s: Record<string, unknown>): MapSession {
     scheduled_at: s.scheduled_at as string,
     host_username: (s.host_username as string) ?? null,
     host_avatar: (s.host_avatar as string) ?? null,
+    shop_id: (s.shop_id as string) ?? null,
+    shop_name: (s.shop_name as string) ?? null,
   };
 }
 

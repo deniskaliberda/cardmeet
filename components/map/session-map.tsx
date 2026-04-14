@@ -27,6 +27,8 @@ export type MapSession = {
   host_id?: string | null;
   is_venue?: boolean | null;
   venue_name?: string | null;
+  shop_id?: string | null;
+  shop_name?: string | null;
 };
 
 const TCG_COLORS: Record<string, string> = {

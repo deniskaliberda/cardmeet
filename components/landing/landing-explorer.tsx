@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, CalendarDays, Clock, MapPin, Search, Users, X } from "lucide-react";
+import { Calendar, CalendarDays, Clock, MapPin, Search, Store, Users, X } from "lucide-react";
 import { TCG_LIST, getTCG } from "@/lib/config/tcg";
 import { useExplorerStore } from "@/lib/stores/explorer-store";
 import type { DateFilter } from "@/lib/stores/explorer-store";
@@ -71,10 +71,12 @@ export function LandingExplorer({
     activeTcg, activeFormat, activePowerLevel,
     searchQuery,
     dateFilter, fromMinutes,
+    shopOnly,
     setSelected, setHovered,
     setTcgFilter, setFormatFilter, setPowerLevelFilter,
     setSearchQuery,
     setDateFilter, setFromMinutes,
+    toggleShopOnly,
   } = useExplorerStore();
 
   const listRef = useRef<HTMLDivElement>(null);
@@ -88,6 +90,7 @@ export function LandingExplorer({
 
   // Filtering
   const filtered = sessions.filter((s) => {
+    if (shopOnly && !(s as any).shop_id) return false;
     if (activeTcg && s.tcg !== activeTcg) return false;
     if (activeFormat && s.format !== activeFormat) return false;
     if (activePowerLevel != null && (s as any).power_level !== activePowerLevel) return false;
@@ -186,13 +189,16 @@ export function LandingExplorer({
             onChange={(e) => { if (e.target.value) { const [h, m] = e.target.value.split(":").map(Number); setFromMinutes(h * 60 + m); } }} />
         </div>
 
-        {/* TCG filter */}
+        {/* TCG filter + shop filter */}
         <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
           <FilterPill label="Alle" active={!activeTcg} onClick={() => setTcgFilter(null)} />
           {TCG_LIST.map((tcg) => (
             <FilterPill key={tcg.id} label={tcg.shortName} active={activeTcg === tcg.id} color={tcg.color}
               onClick={() => setTcgFilter(activeTcg === tcg.id ? null : tcg.id)} />
           ))}
+          <span className="mx-0.5 h-4 w-px bg-border" />
+          <FilterPill label="🏪 Im Laden" active={shopOnly} color="#D97706"
+            onClick={toggleShopOnly} />
         </div>
 
         {/* Format filter (shown when TCG selected) */}
@@ -292,9 +298,9 @@ function ExplorerSessionCard({ session, isSelected, onSelect, onHoverStart, onHo
       <div className="mb-2">
         <div className="flex items-center gap-1.5 mb-0.5">
           <p className="truncate text-sm font-medium flex-1">{session.title}</p>
-          {(session as any).is_venue && (
-            <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-              🏪 LGS
+          {((session as any).shop_id || (session as any).is_venue) && (
+            <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/25">
+              🏪 {(session as any).shop_name || (session as any).venue_name || "LGS"}
             </span>
           )}
         </div>
