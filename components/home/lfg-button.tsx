@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Crosshair } from "lucide-react";
+import { Crosshair, Info, MapPin, Users, Zap } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -73,7 +73,7 @@ export function LfgButton({
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold tracking-tight">LFG</span>
+                <span className="text-lg font-bold tracking-tight">Looking for Group</span>
                 {hasActive && (
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
@@ -83,8 +83,8 @@ export function LfgButton({
               </div>
               <p className="text-sm text-muted-foreground">
                 {hasActive
-                  ? `${activeLfgCount} aktive${activeLfgCount > 1 ? "" : ""} Suche${activeLfgCount > 1 ? "n" : ""} — tippe zum Verwalten`
-                  : "Spieler in deiner Nähe finden"}
+                  ? `${activeLfgCount} aktive Suche${activeLfgCount > 1 ? "n" : ""} — tippe zum Verwalten`
+                  : "Sag wann & wo — wir finden Mitspieler für dich"}
               </p>
             </div>
 
@@ -95,14 +95,49 @@ export function LfgButton({
           </div>
       </SheetTrigger>
 
-      <SheetContent side="bottom" className="rounded-t-2xl">
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[92vh] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-lg">
             <Crosshair className="h-5 w-5 text-primary" />
             Looking for Group
           </SheetTitle>
         </SheetHeader>
-        <div className="mt-4 pb-6">
+
+        {/* How it works explainer */}
+        <div className="mt-3 mb-5 rounded-xl bg-primary/10 border border-primary/20 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-sm font-semibold">So funktioniert&apos;s</span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex flex-col items-center text-center gap-1.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20">
+                <MapPin className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-xs text-muted-foreground leading-tight">
+                Wann & wo du spielen willst
+              </span>
+            </div>
+            <div className="flex flex-col items-center text-center gap-1.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-xs text-muted-foreground leading-tight">
+                Wir finden passende Mitspieler
+              </span>
+            </div>
+            <div className="flex flex-col items-center text-center gap-1.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20">
+                <Zap className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-xs text-muted-foreground leading-tight">
+                Session wird automatisch erstellt
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="pb-6">
           <LfgQuickForm
             preferredTcgs={preferredTcgs}
             userLat={userLat}

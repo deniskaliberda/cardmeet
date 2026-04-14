@@ -181,11 +181,6 @@ export function LfgQuickForm({ preferredTcgs, userLat, userLng, userCity, onClos
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        Sag uns wann und wo du spielen willst — wir finden Mitspieler und erstellen automatisch eine Session.
-      </p>
-
       {/* TCG + Radius (2-column grid like Alert) */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
