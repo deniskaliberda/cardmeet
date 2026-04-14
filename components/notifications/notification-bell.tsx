@@ -12,6 +12,7 @@ type Notification = {
   body: string | null;
   read: boolean;
   created_at: string;
+  data?: { session_id?: string } | null;
 };
 
 export function NotificationBell({ userId }: { userId: string }) {
@@ -93,7 +94,7 @@ export function NotificationBell({ userId }: { userId: string }) {
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-11 z-50 w-80 glass rounded-xl shadow-[0_4px_24px_oklch(0.224_0.018_275.1/12%)] overflow-hidden">
+          <div className="absolute right-0 top-11 z-50 w-80 bg-card border border-border rounded-xl shadow-[0_4px_24px_oklch(0.224_0.018_275.1/20%)] overflow-hidden">
             <div className="px-4 py-3 text-sm font-medium border-b border-[var(--outline-variant)]/15">
               Benachrichtigungen
             </div>
@@ -103,25 +104,46 @@ export function NotificationBell({ userId }: { userId: string }) {
                   Keine Benachrichtigungen
                 </div>
               ) : (
-                notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    className={cn(
-                      "px-4 py-3 tonal-transition hover:bg-[var(--surface-container-low)]",
-                      !n.read && "bg-primary/5"
-                    )}
-                  >
-                    <div className="text-xs font-medium">{n.title}</div>
-                    {n.body && (
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {n.body}
+                notifications.map((n) => {
+                  const sessionId = n.data?.session_id;
+                  const inner = (
+                    <>
+                      <div className="text-xs font-medium">{n.title}</div>
+                      {n.body && (
+                        <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                          {n.body}
+                        </div>
+                      )}
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        {formatTime(n.created_at)}
                       </div>
-                    )}
-                    <div className="text-[10px] text-muted-foreground mt-1">
-                      {formatTime(n.created_at)}
+                    </>
+                  );
+                  return sessionId ? (
+                    <a
+                      key={n.id}
+                      href={`/my-sessions`}
+                      onClick={() => setOpen(false)}
+                      className={cn(
+                        "flex items-start gap-2 px-4 py-3 transition-colors hover:bg-[var(--surface-container-low)] cursor-pointer group",
+                        !n.read && "bg-primary/5"
+                      )}
+                    >
+                      <div className="flex-1 min-w-0">{inner}</div>
+                      <span className="shrink-0 text-muted-foreground group-hover:text-primary transition-colors mt-0.5 text-xs">→</span>
+                    </a>
+                  ) : (
+                    <div
+                      key={n.id}
+                      className={cn(
+                        "px-4 py-3 transition-colors",
+                        !n.read && "bg-primary/5"
+                      )}
+                    >
+                      {inner}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
