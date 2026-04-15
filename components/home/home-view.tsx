@@ -115,14 +115,14 @@ export function HomeView({
             shopCount={9}
           />
 
-          {/* 4. TCG Shortcuts */}
+          {/* 4. Deine Sessions (Upcoming) */}
+          <UpcomingSessions sessions={allUpcoming} />
+
+          {/* 5. TCG Shortcuts */}
           <TcgShortcuts />
 
-          {/* 5. Friends playing */}
+          {/* 6. Friends playing */}
           <FriendsPlaying sessions={friendsSessions} />
-
-          {/* 6. Upcoming sessions */}
-          {allUpcoming.length > 0 && <UpcomingSessions sessions={allUpcoming} />}
         </div>
       )}
 

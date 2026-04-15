@@ -37,7 +37,7 @@ export function UpcomingSessions({ sessions }: { sessions: Session[] }) {
           Deine Sessions
         </h2>
         <Link
-          href="/entdecken"
+          href="/sessions"
           className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
         >
           Alle
