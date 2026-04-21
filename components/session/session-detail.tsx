@@ -104,7 +104,14 @@ export function SessionDetail({
           <div>
             <CardTitle className="text-xl">{session.title}</CardTitle>
             <p className="text-sm text-muted-foreground">
-              von {session.profiles?.username ?? "Unbekannt"}
+              von{" "}
+              {session.profiles?.id ? (
+                <a href={`/players/${session.profiles.id}`} className="hover:underline hover:text-foreground transition-colors">
+                  {session.profiles.username}
+                </a>
+              ) : (
+                "Unbekannt"
+              )}
             </p>
           </div>
           <div className="flex flex-col items-end gap-1">

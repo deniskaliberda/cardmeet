@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, MapPin, Star, UserCheck, UserPlus, Users } from "lucide-react";
+import { Calendar, MapPin, MessageCircle, Star, UserCheck, UserPlus, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getTCG } from "@/lib/config/tcg";
@@ -65,6 +66,7 @@ export function PublicProfile({
 }) {
   const [friendship, setFriendship] = useState<FriendshipInfo>(initialFriendship ?? null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
   const displayName = profile.display_name ?? profile.username;
   const initials = displayName.slice(0, 2).toUpperCase();
   const rating = profile.avg_rating ?? 0;
@@ -142,10 +144,20 @@ export function PublicProfile({
                   </Button>
                 )}
                 {friendship?.status === "accepted" && (
-                  <Button size="sm" variant="outline" disabled className="text-green-600 border-green-200">
-                    <UserCheck className="h-4 w-4 mr-1.5" />
-                    Befreundet
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" disabled className="text-green-600 border-green-200">
+                      <UserCheck className="h-4 w-4 mr-1.5" />
+                      Befreundet
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => router.push(`?dm=${profile.id}`)}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1.5" />
+                      Nachricht
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
