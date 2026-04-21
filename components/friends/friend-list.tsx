@@ -8,6 +8,7 @@ import { Star, UserMinus, Check, X, MessageCircle } from "lucide-react";
 import { acceptFriendRequest, removeFriend } from "@/app/(app)/friends/actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useDm } from "@/lib/dm-context";
 
 type Friend = {
   friendship_id: string;
@@ -65,6 +66,7 @@ export function FriendList({
 
 function FriendCard({ friend }: { friend: Friend }) {
   const router = useRouter();
+  const { openDm } = useDm();
   const [pending, startTransition] = useTransition();
 
   function handleRemove() {
@@ -100,7 +102,7 @@ function FriendCard({ friend }: { friend: Friend }) {
         )}
       </div>
       <button
-        onClick={() => router.push("?dm=" + friend.user_id)}
+        onClick={() => openDm({ id: friend.user_id, username: friend.username, avatar_url: friend.avatar_url })}
         className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
         title="Nachricht schreiben"
       >

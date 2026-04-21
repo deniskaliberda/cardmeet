@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, useTransition, Suspense } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useSearchParams, useRouter } from "next/navigation";
 import { MessageCircle, X, ArrowLeft, Send } from "lucide-react";
 import { getDMConversations, getDMMessages, sendDM } from "@/app/(app)/chat/actions";
 import { formatDistanceToNow, format } from "date-fns";
 import { de } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useDm } from "@/lib/dm-context";
 
 type Conversation = {
   partner: { id: string; username: string; avatar_url: string | null };
@@ -23,7 +23,7 @@ type DMessage = {
   created_at: string;
 };
 
-function DmPanelInner({ userId }: { userId: string }) {
+export function DmPanel({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"list" | "chat">("list");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -36,40 +36,32 @@ function DmPanelInner({ userId }: { userId: string }) {
   const [, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const { dmTarget, clearDmTarget } = useDm();
 
   // Scroll to bottom
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Auto-open panel from ?dm=userId URL param
+  // Open panel when dmTarget is set via context
   useEffect(() => {
-    const dmUserId = searchParams.get("dm");
-    if (!dmUserId) return;
+    if (!dmTarget) return;
     setOpen(true);
     setView("chat");
     setLoadingMsgs(true);
     setMessages([]);
-    getDMMessages(dmUserId).then(({ messages }) => {
+    setActivePartner({ id: dmTarget.id, username: dmTarget.username, avatar_url: dmTarget.avatar_url ?? null });
+    getDMMessages(dmTarget.id).then(({ messages }) => {
       setMessages(messages as DMessage[]);
       setLoadingMsgs(false);
     });
-    // We don't have the username here — fetch from conversations or just set id
-    setActivePartner({ id: dmUserId, username: "...", avatar_url: null });
     getDMConversations().then(({ conversations }) => {
       setConversations(conversations);
       setUnreadTotal(conversations.reduce((s, c) => s + c.unreadCount, 0));
-      const conv = conversations.find((c) => c.partner.id === dmUserId);
-      if (conv) setActivePartner(conv.partner);
     });
-    // Remove ?dm param from URL without reload
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("dm");
-    router.replace(params.toString() ? `?${params}` : window.location.pathname, { scroll: false });
+    clearDmTarget();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [dmTarget]);
 
   // Load conversations when panel opens
   useEffect(() => {
@@ -352,11 +344,3 @@ function DmPanelInner({ userId }: { userId: string }) {
   );
 }
 
-// Wrap in Suspense because useSearchParams() requires it in Next.js
-export function DmPanel(props: { userId: string }) {
-  return (
-    <Suspense fallback={null}>
-      <DmPanelInner {...props} />
-    </Suspense>
-  );
-}

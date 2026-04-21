@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Calendar, MapPin, MessageCircle, Star, UserCheck, UserPlus, Users } from "lucide-react";
@@ -12,6 +11,7 @@ import { TCGIcon } from "@/components/icons/tcg-icons";
 import { cn } from "@/lib/utils";
 import { sendFriendRequest, acceptFriendRequest } from "@/app/(app)/friends/actions";
 import { toast } from "sonner";
+import { useDm } from "@/lib/dm-context";
 
 type Profile = {
   id: string;
@@ -66,7 +66,7 @@ export function PublicProfile({
 }) {
   const [friendship, setFriendship] = useState<FriendshipInfo>(initialFriendship ?? null);
   const [pending, startTransition] = useTransition();
-  const router = useRouter();
+  const { openDm } = useDm();
   const displayName = profile.display_name ?? profile.username;
   const initials = displayName.slice(0, 2).toUpperCase();
   const rating = profile.avg_rating ?? 0;
@@ -152,7 +152,7 @@ export function PublicProfile({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => router.push(`?dm=${profile.id}`)}
+                      onClick={() => openDm({ id: profile.id, username: profile.display_name ?? profile.username, avatar_url: profile.avatar_url ?? null })}
                     >
                       <MessageCircle className="h-4 w-4 mr-1.5" />
                       Nachricht

@@ -13,6 +13,7 @@ import {
 import { Home, Compass, Store, Bookmark, User, Plus, LogOut } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { DmPanel } from "@/components/chat/dm-panel";
+import { DmProvider } from "@/lib/dm-context";
 import { cn } from "@/lib/utils";
 
 type AppUser = {
@@ -55,6 +56,7 @@ export function AppShell({
   }
 
   return (
+    <DmProvider>
     <div className="flex min-h-screen flex-col bg-background">
       {/* Floating navbar */}
       <header className="sticky top-2.5 z-50 px-4 sm:px-6">
@@ -168,5 +170,6 @@ export function AppShell({
         </div>
       </nav>
     </div>
+    </DmProvider>
   );
 }
