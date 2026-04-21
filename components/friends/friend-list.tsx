@@ -100,7 +100,7 @@ function FriendCard({ friend }: { friend: Friend }) {
         )}
       </div>
       <button
-        onClick={() => router.push("/?dm=" + friend.user_id)}
+        onClick={() => router.push("?dm=" + friend.user_id)}
         className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
         title="Nachricht schreiben"
       >
