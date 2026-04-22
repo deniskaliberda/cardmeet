@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 
 const uuidSchema = z.string().uuid();
 const DM_MAX_LEN = 2000;
+const DM_RATE_WINDOW_MS = 60_000;
+const DM_RATE_MAX = 30;
 
 export async function getDMConversations() {
   const supabase = await createClient();
@@ -117,6 +119,16 @@ export async function sendDM(receiverId: string, content: string) {
   if (!user) return { error: "Nicht angemeldet" };
   if (user.id === safeReceiverId) return { error: "Du kannst dir nicht selbst schreiben" };
 
+  const windowStart = new Date(Date.now() - DM_RATE_WINDOW_MS).toISOString();
+  const { count: recentCount } = await (supabase as any)
+    .from("direct_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("sender_id", user.id)
+    .gt("created_at", windowStart);
+  if ((recentCount ?? 0) >= DM_RATE_MAX) {
+    return { error: "Zu viele Nachrichten. Bitte warte einen Moment." };
+  }
+
   const { error } = await (supabase as any).from("direct_messages").insert({
     sender_id: user.id,
     receiver_id: safeReceiverId,
@@ -125,20 +137,7 @@ export async function sendDM(receiverId: string, content: string) {
 
   if (error) return { error: error.message };
 
-  // Push notification to receiver
-  const { data: sender } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
-    .single();
-
-  await supabase.from("notifications").insert({
-    user_id: safeReceiverId,
-    type: "chat_message",
-    title: sender?.username ?? "Jemand",
-    body: trimmed.slice(0, 100),
-  });
-
+  // Notification is created by DB trigger (00029_dm_friend_notification_triggers)
   return { success: true };
 }
 

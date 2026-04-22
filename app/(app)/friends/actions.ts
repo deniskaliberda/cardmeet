@@ -69,20 +69,7 @@ export async function sendFriendRequest(addresseeId: string) {
     return { error: error.message };
   }
 
-  // Notify the addressee
-  const { data: sender } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
-    .single();
-
-  await supabase.from("notifications").insert({
-    user_id: safeAddresseeId,
-    type: "friend_request",
-    title: `${sender?.username ?? "Jemand"} möchte dein Freund sein`,
-    body: null,
-  });
-
+  // Notification is created by DB trigger (00029_dm_friend_notification_triggers)
   revalidatePath("/profile");
   revalidatePath("/sessions/create");
   return { success: true };
@@ -109,28 +96,7 @@ export async function acceptFriendRequest(friendshipId: string) {
 
   if (error) return { error: error.message };
 
-  // Notify the requester that their request was accepted
-  const { data: friendship } = await supabase
-    .from("friendships")
-    .select("requester_id, profiles!friendships_requester_id_fkey(username)")
-    .eq("id", safeFriendshipId)
-    .single();
-
-  const accepterUsername = (await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
-    .single()).data?.username ?? "Jemand";
-
-  if (friendship?.requester_id) {
-    await supabase.from("notifications").insert({
-      user_id: friendship.requester_id,
-      type: "friend_accepted",
-      title: `${accepterUsername} hat deine Freundschaftsanfrage angenommen`,
-      body: null,
-    });
-  }
-
+  // Notification is created by DB trigger (00029_dm_friend_notification_triggers)
   revalidatePath("/profile");
   return { success: true };
 }
