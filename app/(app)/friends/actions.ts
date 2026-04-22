@@ -1,7 +1,10 @@
 "use server";
 
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+
+const uuidSchema = z.string().uuid();
 
 export async function searchUsers(query: string) {
   if (!query || query.trim().length < 2) return { users: [] };
@@ -43,17 +46,21 @@ export async function searchUsers(query: string) {
 }
 
 export async function sendFriendRequest(addresseeId: string) {
+  const parsed = uuidSchema.safeParse(addresseeId);
+  if (!parsed.success) return { error: "Ungueltige Nutzer-ID" };
+  const safeAddresseeId = parsed.data;
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) return { error: "Nicht angemeldet" };
-  if (user.id === addresseeId) return { error: "Du kannst dir nicht selbst eine Anfrage senden" };
+  if (user.id === safeAddresseeId) return { error: "Du kannst dir nicht selbst eine Anfrage senden" };
 
   const { error } = await supabase.from("friendships").insert({
     requester_id: user.id,
-    addressee_id: addresseeId,
+    addressee_id: safeAddresseeId,
     status: "pending",
   });
 
@@ -70,7 +77,7 @@ export async function sendFriendRequest(addresseeId: string) {
     .single();
 
   await supabase.from("notifications").insert({
-    user_id: addresseeId,
+    user_id: safeAddresseeId,
     type: "friend_request",
     title: `${sender?.username ?? "Jemand"} möchte dein Freund sein`,
     body: null,
@@ -82,6 +89,10 @@ export async function sendFriendRequest(addresseeId: string) {
 }
 
 export async function acceptFriendRequest(friendshipId: string) {
+  const parsed = uuidSchema.safeParse(friendshipId);
+  if (!parsed.success) return { error: "Ungueltige Anfrage-ID" };
+  const safeFriendshipId = parsed.data;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -92,7 +103,7 @@ export async function acceptFriendRequest(friendshipId: string) {
   const { error } = await supabase
     .from("friendships")
     .update({ status: "accepted", updated_at: new Date().toISOString() })
-    .eq("id", friendshipId)
+    .eq("id", safeFriendshipId)
     .eq("addressee_id", user.id)
     .eq("status", "pending");
 
@@ -102,7 +113,7 @@ export async function acceptFriendRequest(friendshipId: string) {
   const { data: friendship } = await supabase
     .from("friendships")
     .select("requester_id, profiles!friendships_requester_id_fkey(username)")
-    .eq("id", friendshipId)
+    .eq("id", safeFriendshipId)
     .single();
 
   const accepterUsername = (await supabase
@@ -125,6 +136,10 @@ export async function acceptFriendRequest(friendshipId: string) {
 }
 
 export async function removeFriend(friendshipId: string) {
+  const parsed = uuidSchema.safeParse(friendshipId);
+  if (!parsed.success) return { error: "Ungueltige Freundschafts-ID" };
+  const safeFriendshipId = parsed.data;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -135,7 +150,8 @@ export async function removeFriend(friendshipId: string) {
   const { error } = await supabase
     .from("friendships")
     .delete()
-    .eq("id", friendshipId);
+    .eq("id", safeFriendshipId)
+    .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
   if (error) return { error: error.message };
 
@@ -145,6 +161,10 @@ export async function removeFriend(friendshipId: string) {
 }
 
 export async function blockUser(friendshipId: string) {
+  const parsed = uuidSchema.safeParse(friendshipId);
+  if (!parsed.success) return { error: "Ungueltige Freundschafts-ID" };
+  const safeFriendshipId = parsed.data;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -155,7 +175,8 @@ export async function blockUser(friendshipId: string) {
   const { error } = await supabase
     .from("friendships")
     .update({ status: "blocked", updated_at: new Date().toISOString() })
-    .eq("id", friendshipId);
+    .eq("id", safeFriendshipId)
+    .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
   if (error) return { error: error.message };
 

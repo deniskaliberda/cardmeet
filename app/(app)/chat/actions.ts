@@ -1,6 +1,10 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+
+const uuidSchema = z.string().uuid();
+const DM_MAX_LEN = 2000;
 
 export async function getDMConversations() {
   const supabase = await createClient();
@@ -70,6 +74,10 @@ export async function getDMConversations() {
 }
 
 export async function getDMMessages(friendId: string) {
+  const parsed = uuidSchema.safeParse(friendId);
+  if (!parsed.success) return { messages: [] };
+  const safeFriendId = parsed.data;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { messages: [] };
@@ -78,8 +86,8 @@ export async function getDMMessages(friendId: string) {
     .from("direct_messages")
     .select("id, sender_id, content, read, created_at")
     .or(
-      `and(sender_id.eq.${user.id},receiver_id.eq.${friendId}),` +
-      `and(sender_id.eq.${friendId},receiver_id.eq.${user.id})`
+      `and(sender_id.eq.${user.id},receiver_id.eq.${safeFriendId}),` +
+      `and(sender_id.eq.${safeFriendId},receiver_id.eq.${user.id})`
     )
     .order("created_at", { ascending: true })
     .limit(100);
@@ -88,7 +96,7 @@ export async function getDMMessages(friendId: string) {
   await (supabase as any)
     .from("direct_messages")
     .update({ read: true })
-    .eq("sender_id", friendId)
+    .eq("sender_id", safeFriendId)
     .eq("receiver_id", user.id)
     .eq("read", false);
 
@@ -96,15 +104,23 @@ export async function getDMMessages(friendId: string) {
 }
 
 export async function sendDM(receiverId: string, content: string) {
+  const parsed = uuidSchema.safeParse(receiverId);
+  if (!parsed.success) return { error: "Ungueltiger Empfaenger" };
+  const safeReceiverId = parsed.data;
+
+  const trimmed = content.trim();
+  if (!trimmed) return { error: "Nachricht leer" };
+  if (trimmed.length > DM_MAX_LEN) return { error: `Nachricht zu lang (max. ${DM_MAX_LEN} Zeichen)` };
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht angemeldet" };
-  if (!content.trim()) return { error: "Nachricht leer" };
+  if (user.id === safeReceiverId) return { error: "Du kannst dir nicht selbst schreiben" };
 
   const { error } = await (supabase as any).from("direct_messages").insert({
     sender_id: user.id,
-    receiver_id: receiverId,
-    content: content.trim(),
+    receiver_id: safeReceiverId,
+    content: trimmed,
   });
 
   if (error) return { error: error.message };
@@ -117,10 +133,10 @@ export async function sendDM(receiverId: string, content: string) {
     .single();
 
   await supabase.from("notifications").insert({
-    user_id: receiverId,
+    user_id: safeReceiverId,
     type: "chat_message",
     title: sender?.username ?? "Jemand",
-    body: content.trim().slice(0, 100),
+    body: trimmed.slice(0, 100),
   });
 
   return { success: true };
