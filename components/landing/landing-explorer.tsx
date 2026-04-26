@@ -300,13 +300,41 @@ export function LandingExplorer({
 function FilterPill({ label, active, color, onClick, small, closeable }: {
   label: string; active: boolean; color?: string; onClick: () => void; small?: boolean; closeable?: boolean;
 }) {
-  const ac = color ?? "var(--primary)";
+  // Mockup pattern:
+  //  - active without TCG-tint  → primary mockup gradient + purple glow + white text
+  //  - active with TCG-tint     → game-color gradient pill (no border)
+  //  - inactive                 → transparent + 1px border + muted text
+  const tinted = Boolean(color);
+  const activeStyle: React.CSSProperties = tinted
+    ? {
+        background: `linear-gradient(135deg, ${color}, color-mix(in oklch, ${color} 60%, #000))`,
+        borderColor: "transparent",
+        color: "#fff",
+        boxShadow: `0 2px 10px color-mix(in oklch, ${color} 50%, transparent)`,
+      }
+    : {
+        background: "var(--gradient-primary)",
+        borderColor: "transparent",
+        color: "#fff",
+        boxShadow: "var(--shadow-purple-sm)",
+      };
+  const idleStyle: React.CSSProperties = {
+    background: "transparent",
+    borderColor: "var(--border)",
+    color: "var(--muted-foreground)",
+  };
   return (
-    <button onClick={onClick}
-      className="flex shrink-0 items-center gap-1 rounded-full border font-semibold transition-all cursor-pointer whitespace-nowrap"
-      style={{ fontSize: small ? "10px" : "11px", padding: small ? "2px 10px" : "3px 12px",
-        ...(active ? { background: `${ac}22`, borderColor: ac, color: ac } : { background: "transparent", borderColor: "var(--border)", color: "var(--muted-foreground)" }) }}>
-      {label}{closeable && <span className="ml-0.5 text-[10px] opacity-70">✕</span>}
+    <button
+      onClick={onClick}
+      className="flex shrink-0 items-center gap-1 rounded-full border font-bold transition-all cursor-pointer whitespace-nowrap"
+      style={{
+        fontSize: small ? "10px" : "11px",
+        padding: small ? "3px 11px" : "4px 13px",
+        ...(active ? activeStyle : idleStyle),
+      }}
+    >
+      {label}
+      {closeable && <span className="ml-0.5 text-[10px] opacity-70">✕</span>}
     </button>
   );
 }

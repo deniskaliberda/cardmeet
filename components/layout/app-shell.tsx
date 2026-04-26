@@ -72,7 +72,7 @@ export function AppShell({
               fontSize: "1.25em",
               fontWeight: 300,
               letterSpacing: "-1.5px",
-              background: "var(--brand-gradient)",
+              background: "var(--gradient-lfg)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",

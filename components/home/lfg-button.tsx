@@ -37,10 +37,14 @@ export function LfgButton({
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      {/* LFG Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl border border-primary/30"
+      {/* LFG Hero — mockup signature: blue→violet→pink gradient + purple glow */}
+      <div
+        className="relative overflow-hidden rounded-2xl border"
         style={{
-          background: "linear-gradient(135deg, oklch(0.62 0.22 264 / 12%), oklch(0.55 0.20 285 / 8%), oklch(0.13 0.02 270))",
+          borderColor: "rgba(91, 61, 255, 0.35)",
+          background:
+            "linear-gradient(135deg, rgba(0,102,255,0.14), rgba(91,61,255,0.10) 55%, rgba(255,77,138,0.08))",
+          boxShadow: "var(--shadow-purple-md)",
         }}
       >
         {/* Top: Split layout — LFG button left, explanation right */}
@@ -49,13 +53,13 @@ export function LfgButton({
           onClick={() => setOpen(true)}
           className="flex w-full items-stretch gap-0 text-left cursor-pointer transition-all active:scale-[0.99]"
         >
-          {/* Left: LFG Brand Block */}
+          {/* Left: LFG brand block — mockup gradient + 3-color tint */}
           <div
             className="flex shrink-0 flex-col items-center justify-center gap-2 px-6 py-6 sm:px-8"
             style={{
               background: hasActive
-                ? "linear-gradient(180deg, oklch(0.75 0.18 160 / 25%), oklch(0.62 0.22 264 / 15%))"
-                : "linear-gradient(180deg, oklch(0.62 0.22 264 / 25%), oklch(0.55 0.20 285 / 15%))",
+                ? "linear-gradient(180deg, rgba(0,168,120,0.28), rgba(91,61,255,0.18))"
+                : "linear-gradient(180deg, rgba(0,102,255,0.30), rgba(91,61,255,0.22), rgba(255,77,138,0.14))",
             }}
           >
             <div
@@ -63,10 +67,10 @@ export function LfgButton({
               style={{
                 background: hasActive
                   ? "linear-gradient(135deg, oklch(0.75 0.18 160), oklch(0.65 0.2 180))"
-                  : "linear-gradient(135deg, oklch(0.62 0.22 264), oklch(0.55 0.20 285))",
+                  : "var(--gradient-lfg)",
                 boxShadow: hasActive
-                  ? "0 4px 20px oklch(0.75 0.18 160 / 40%)"
-                  : "0 4px 20px oklch(0.62 0.22 264 / 40%)",
+                  ? "0 6px 18px oklch(0.75 0.18 160 / 45%)"
+                  : "var(--shadow-purple-lg)",
               }}
             >
               <Crosshair className="h-7 w-7 text-white" />
@@ -81,27 +85,42 @@ export function LfgButton({
           </div>
 
           {/* Right: Explanation */}
-          <div className="flex flex-1 flex-col justify-center gap-2 py-5 pr-4 pl-1">
+          <div className="flex flex-1 flex-col justify-center gap-2 py-5 pr-4 pl-3">
             <div>
-              <h3 className="font-heading text-base font-bold tracking-tight sm:text-lg">
+              <span
+                className="mono-eyebrow block"
+                style={{ color: "#FF4D8A", marginBottom: 4 }}
+              >
                 Looking for Group
+              </span>
+              <h3 className="font-heading text-lg font-bold tracking-tight">
+                Mitspieler finden
               </h3>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 {hasActive
-                  ? `${activeLfgCount} aktive Suche${activeLfgCount > 1 ? "n" : ""} laufen — tippe zum Verwalten`
-                  : "Sag uns wann und wo du spielen willst — wir finden Mitspieler und erstellen automatisch eine Session."}
+                  ? `${activeLfgCount} aktive Suche${activeLfgCount > 1 ? "n" : ""} — tippe zum Verwalten`
+                  : "Sag uns wann und wo — wir matchen dich automatisch."}
               </p>
             </div>
-            <div className="flex items-center gap-1.5 text-sm font-semibold text-primary">
-              {hasActive ? "Suchen verwalten" : "Jetzt Mitspieler finden"}
-              <ChevronRight className="h-4 w-4" />
+            <div
+              className="inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1.5 text-xs font-bold text-white"
+              style={{
+                background: "var(--gradient-primary)",
+                boxShadow: "var(--shadow-purple-sm)",
+              }}
+            >
+              {hasActive ? "Suchen verwalten" : "Jetzt suchen"}
+              <ChevronRight className="h-3.5 w-3.5" />
             </div>
           </div>
         </button>
 
         {/* Bottom: Process visualization */}
-        <div className="border-t border-primary/15 px-4 py-4 sm:px-6">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <div
+          className="border-t px-4 py-4 sm:px-6"
+          style={{ borderColor: "rgba(91, 61, 255, 0.18)" }}
+        >
+          <p className="mono-eyebrow mb-3" style={{ color: "var(--muted-foreground)" }}>
             So funktioniert&apos;s
           </p>
           <div className="grid grid-cols-4 gap-2">
@@ -109,14 +128,19 @@ export function LfgButton({
               const Icon = step.icon;
               return (
                 <div key={i} className="relative flex flex-col items-center text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 mb-1.5">
-                    <Icon className="h-4.5 w-4.5 text-primary" />
+                  <div
+                    className="mb-1.5 flex h-10 w-10 items-center justify-center rounded-full"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(0,102,255,0.18), rgba(91,61,255,0.14))",
+                    }}
+                  >
+                    <Icon className="h-4.5 w-4.5" style={{ color: "#7B5DFF" }} />
                   </div>
                   <span className="text-xs font-semibold leading-tight">{step.label}</span>
                   <span className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{step.sub}</span>
-                  {/* Arrow connector */}
                   {i < STEPS.length - 1 && (
-                    <div className="absolute right-0 top-4 translate-x-1/2 text-primary/40 text-xs hidden sm:block">
+                    <div className="absolute right-0 top-4 hidden translate-x-1/2 text-xs text-primary/40 sm:block">
                       →
                     </div>
                   )}

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, MapPin, Users, Search, Star, Clock, Zap, Target } from "lucide-react";
+import { Calendar, MapPin, Users, Search, ThumbsUp, Clock, Zap, Target } from "lucide-react";
 import { TCG_LIST, getTCG, getPowerLevel } from "@/lib/config/tcg";
 import { TCGIcon, TCGImage } from "@/components/icons/tcg-icons";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -332,28 +332,36 @@ function BrowserSessionCard({
           background: `linear-gradient(135deg, color-mix(in oklch, ${accent} 6%, var(--card)) 0%, var(--card) 60%)`,
         }}
       >
-        {/* TCG accent bar — design system: 4px left border in TCG color */}
+        {/* TCG accent bar — mockup: 3px vertical gradient in TCG color */}
         <span
           aria-hidden
-          className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
-          style={{ backgroundColor: accent, opacity: 0.85 }}
+          className="absolute left-0 top-0 h-full w-[3px]"
+          style={{
+            background: `linear-gradient(180deg, ${accent}, color-mix(in oklch, ${accent} 55%, #000))`,
+          }}
         />
-        {/* Header: title + badge */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div>
-            <div className="text-sm font-medium">{session.title}</div>
-            <span
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium mt-1"
-              style={{
-                backgroundColor: tcg?.color ? `${tcg.color}20` : undefined,
-                color: tcg?.color,
-                border: tcg?.color ? `1px solid ${tcg.color}40` : undefined,
-              }}
-            >
-              <TCGIcon tcgId={session.tcg} className="h-3 w-3" color={tcg?.color} />
-              {tcg?.shortName}: {session.format}
+        {/* Mockup pattern — mono eyebrow row: TCG · format on left, time on right */}
+        <div className="mb-1 flex items-center justify-between gap-2 pl-2">
+          <span
+            className="mono-eyebrow inline-flex items-center gap-1.5 truncate"
+            style={{ color: accent }}
+          >
+            <TCGIcon tcgId={session.tcg} className="h-3 w-3" color={accent} />
+            <span className="truncate">
+              {tcg?.shortName ?? session.tcg} · {session.format}
             </span>
-          </div>
+          </span>
+          <span
+            className="font-heading shrink-0 text-sm font-bold tabular-nums"
+            style={{ color: "var(--foreground)" }}
+          >
+            {format(scheduledDate, "HH:mm", { locale: de })}
+          </span>
+        </div>
+
+        {/* Title row + optional power-level chip */}
+        <div className="mb-2 flex items-start justify-between gap-2 pl-2">
+          <div className="min-w-0 flex-1 truncate text-sm font-bold">{session.title}</div>
           {powerLevel && (
             <div
               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -366,15 +374,15 @@ function BrowserSessionCard({
         </div>
 
         {/* Meta */}
-        <div className="flex flex-col gap-1 text-xs text-muted-foreground mb-2.5">
+        <div className="mb-2.5 flex flex-col gap-1 pl-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3 w-3" />
-            <span>{format(scheduledDate, "EEE, d. MMM · HH:mm", { locale: de })} Uhr</span>
+            <span>{format(scheduledDate, "EEE, d. MMM", { locale: de })}</span>
           </div>
           {(session.location_name || session.city) && (
             <div className="flex items-center gap-1.5">
               <MapPin className="h-3 w-3" />
-              <span>{session.location_name ?? session.city} (~500m Radius)</span>
+              <span className="truncate">{session.location_name ?? session.city}</span>
             </div>
           )}
           {powerLevel && (
@@ -423,9 +431,12 @@ function BrowserSessionCard({
                 <span className="text-xs font-semibold leading-tight">
                   {session.profiles?.username ?? "Unbekannt"}
                 </span>
-                {session.profiles?.avg_rating != null && (
-                  <span className="flex items-center gap-0.5 text-xs text-amber-500 font-medium">
-                    <Star className="h-2.5 w-2.5 fill-current" />
+                {session.profiles?.avg_rating != null && session.profiles.avg_rating > 0 && (
+                  <span
+                    className="flex items-center gap-0.5 text-xs font-medium"
+                    style={{ color: "var(--kudos)" }}
+                  >
+                    <ThumbsUp className="h-2.5 w-2.5 fill-current" />
                     {session.profiles.avg_rating}
                   </span>
                 )}

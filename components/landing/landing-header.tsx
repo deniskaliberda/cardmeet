@@ -15,7 +15,7 @@ export function LandingHeader() {
             fontSize: "1.35em",
             fontWeight: 300,
             letterSpacing: "-1.5px",
-            background: "var(--brand-gradient)",
+            background: "var(--gradient-lfg)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",

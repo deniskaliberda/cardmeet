@@ -35,10 +35,24 @@
   /* Kudos / recommendation accent (post-00011 review system) */
   --kudos:       #00A878;
 
-  /* Brand gradients */
+  /* Brand gradients (kept as legacy hero-accent for the marketing word) */
   --brand-gradient: linear-gradient(135deg, #0066FF 0%, #00C2A8 55%, #FF6B35 100%);
   --stat-gradient:  linear-gradient(135deg, #0066FF, #00C2A8);
   --button-gradient: linear-gradient(135deg, var(--primary), oklch(0.55 0.20 285));
+
+  /* Mockup gradients — primary CTAs, pills, LFG hero. The 3-stop variant
+     blue→violet→pink is the signature LFG / "looking for group" mark. */
+  --gradient-primary: linear-gradient(135deg, #0066FF, #5B3DFF);
+  --gradient-lfg:     linear-gradient(135deg, #0066FF, #5B3DFF, #FF4D8A);
+  --gradient-lfg-bar: linear-gradient(90deg, #0066FF, #5B3DFF, #FF4D8A);
+
+  /* Mockup signature glows — purple tinted, deeper than the original
+     primary shadow set. Use on primary buttons, active filter pills,
+     LFG hero CTAs. */
+  --shadow-purple-sm: 0 2px 10px rgba(91, 61, 255, 0.5);
+  --shadow-purple-md: 0 4px 16px rgba(91, 61, 255, 0.5);
+  --shadow-purple-lg: 0 8px 24px rgba(91, 61, 255, 0.5);
+  --shadow-pink-lg:   0 8px 24px rgba(255, 77, 138, 0.4);
 
   /* Elevation shadows */
   --shadow-sm:           0 1px 3px rgba(0, 0, 0, 0.04);
@@ -47,6 +61,15 @@
   --shadow-deep:         0 4px 20px rgba(0, 0, 0, 0.12);
   --shadow-primary:      0 2px 12px oklch(0.5 0.2 264 / 25%);
   --shadow-primary-hover: 0 4px 20px oklch(0.5 0.2 264 / 35%);
+}
+
+/* ── Design-system utility classes — used across surfaces ─────────────── */
+.mono-eyebrow {
+  font-family: var(--font-mono), "Fira Code", ui-monospace, monospace;
+  font-weight: 300;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 @theme inline {
