@@ -18,7 +18,10 @@ export default async function DashboardPage() {
 
   const userLat = (profile as any)?.city_lat ?? 52.52;
   const userLng = (profile as any)?.city_lng ?? 13.405;
-  const now = new Date().toISOString();
+  // Single render-time anchor — keeps every comparison stable across the
+  // request and avoids React's no-Date.now()-during-render rule.
+  const renderedAt = new Date();
+  const now = renderedAt.toISOString();
 
   const [
     { data: nearbySessions },
@@ -93,7 +96,7 @@ export default async function DashboardPage() {
   // ── Overview tab data ─────────────────────────────────────────────────────
   const joinedUpcomingCompact = (participations ?? [])
     .map((p) => (p as any).sessions)
-    .filter((s: any) => s && new Date(s.scheduled_at) > new Date());
+    .filter((s: any) => s && new Date(s.scheduled_at) > renderedAt);
 
   const allUpcoming = [
     ...(hostedUpcoming ?? []),
@@ -132,8 +135,8 @@ export default async function DashboardPage() {
     ...(joinedSessionsFull ?? []).map((s) => ({ ...s, role: "participant" as const })),
   ].sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
 
-  const myUpcoming = allSessions.filter((s) => new Date(s.scheduled_at) > new Date());
-  const myPast = allSessions.filter((s) => new Date(s.scheduled_at) <= new Date());
+  const myUpcoming = allSessions.filter((s) => new Date(s.scheduled_at) > renderedAt);
+  const myPast = allSessions.filter((s) => new Date(s.scheduled_at) <= renderedAt);
   const firstSession = myUpcoming[0] ?? myPast[0] ?? null;
 
   const [initialParticipants, initialMessages] = firstSession
@@ -181,7 +184,7 @@ export default async function DashboardPage() {
       .limit(10);
 
     friendsSessions = (friendParticipations ?? [])
-      .filter((fp: any) => fp.sessions && new Date(fp.sessions.scheduled_at) > new Date())
+      .filter((fp: any) => fp.sessions && new Date(fp.sessions.scheduled_at) > renderedAt)
       .map((fp: any) => ({
         friend_username: (fp.profiles as any)?.username ?? "Unbekannt",
         friend_avatar_url: (fp.profiles as any)?.avatar_url ?? null,
@@ -204,7 +207,7 @@ export default async function DashboardPage() {
       .slice(0, 5);
   }
 
-  const hour = new Date().getHours();
+  const hour = renderedAt.getHours();
   const greeting = hour < 12 ? "Guten Morgen" : hour < 18 ? "Guten Tag" : "Guten Abend";
 
   return (
