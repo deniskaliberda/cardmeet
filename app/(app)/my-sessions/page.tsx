@@ -4,6 +4,29 @@ import { MySessionsView } from "@/components/session/my-sessions-view";
 
 export const metadata = { title: "Meine Sessions" };
 
+type ProfileMini = { id: string; username: string; avatar_url: string | null };
+
+type FriendshipRow = {
+  requester_id: string;
+  addressee_id: string;
+  ["profiles!friendships_addressee_id_fkey"]: ProfileMini | null;
+  ["profiles!friendships_requester_id_fkey"]: ProfileMini | null;
+};
+
+type ParticipantRow = {
+  user_id: string;
+  status: string;
+  profiles: { id?: string; username: string; avatar_url: string | null } | null;
+};
+
+type MessageRow = {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  profiles: { username: string; avatar_url: string | null } | null;
+};
+
 export default async function MySessionsPage() {
   const supabase = await createClient();
   const {
@@ -11,7 +34,9 @@ export default async function MySessionsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const now = new Date().toISOString();
+  // Single render-time anchor — keeps cutoff stable across the request and
+  // satisfies React's purity rule (no Date.now() during render).
+  const renderedAt = new Date();
 
   // Sessions als Host
   const { data: hostedSessions } = await supabase
@@ -48,7 +73,7 @@ export default async function MySessionsPage() {
   );
 
   // Sessions gelten 3h nach Startzeit als vergangen (typische TCG-Rundendauer)
-  const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const cutoff = new Date(renderedAt.getTime() - 3 * 60 * 60 * 1000);
   const upcoming = allSessions.filter((s) => new Date(s.scheduled_at) > cutoff);
   const past = allSessions.filter((s) => new Date(s.scheduled_at) <= cutoff);
 
@@ -59,16 +84,16 @@ export default async function MySessionsPage() {
     .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
     .eq("status", "accepted");
 
-  const friends = (friendships ?? []).map((f) => {
+  const friends = ((friendships ?? []) as unknown as FriendshipRow[]).map((f) => {
     const isRequester = f.requester_id === user.id;
     const profile = isRequester
-      ? (f as any)["profiles!friendships_addressee_id_fkey"]
-      : (f as any)["profiles!friendships_requester_id_fkey"];
+      ? f["profiles!friendships_addressee_id_fkey"]
+      : f["profiles!friendships_requester_id_fkey"];
     return {
       user_id: profile?.id ?? "",
       username: profile?.username ?? "Unbekannt",
       avatar_url: profile?.avatar_url ?? null,
-      avg_rating: null,
+      avg_rating: null as number | null,
     };
   }).filter((f) => f.user_id);
 
@@ -98,8 +123,8 @@ export default async function MySessionsPage() {
       upcoming={upcoming}
       past={past}
       initialSessionId={firstSession?.id ?? null}
-      initialParticipants={initialParticipants as any}
-      initialMessages={initialMessages as any}
+      initialParticipants={initialParticipants as unknown as ParticipantRow[]}
+      initialMessages={initialMessages as unknown as MessageRow[]}
       currentUserId={user.id}
       friends={friends}
     />
