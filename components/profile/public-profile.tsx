@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Calendar, MapPin, MessageCircle, Star, UserCheck, UserPlus, Users } from "lucide-react";
+import { Calendar, MapPin, MessageCircle, ThumbsUp, UserCheck, UserPlus, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getTCG } from "@/lib/config/tcg";
@@ -39,7 +39,8 @@ type Session = {
 
 type Review = {
   id: string;
-  rating: number;
+  recommended: boolean;
+  tags: string[] | null;
   comment?: string | null;
   created_at: string;
   profiles?: { username: string; avatar_url: string | null } | null;
@@ -69,9 +70,7 @@ export function PublicProfile({
   const { openDm } = useDm();
   const displayName = profile.display_name ?? profile.username;
   const initials = displayName.slice(0, 2).toUpperCase();
-  const rating = profile.avg_rating ?? 0;
-  const fullStars = Math.floor(rating);
-  const hasHalf = rating - fullStars >= 0.5;
+  const recommendCount = profile.avg_rating ?? 0;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -175,25 +174,15 @@ export function PublicProfile({
       <div className="grid grid-cols-3 gap-3">
         <StatCard label="Sessions" value={profile.session_count ?? 0} />
         <StatCard
-          label="Bewertung"
+          label="Empfehlungen"
           value={
-            <div className="flex items-center gap-1">
-              <span className="font-semibold">{rating > 0 ? rating.toFixed(1) : "–"}</span>
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star
-                    key={i}
-                    className="h-3.5 w-3.5"
-                    fill={i <= fullStars ? "#F59E0B" : i === fullStars + 1 && hasHalf ? "#F59E0B" : "none"}
-                    stroke="#F59E0B"
-                    style={{ opacity: i <= fullStars || (i === fullStars + 1 && hasHalf) ? 1 : 0.3 }}
-                  />
-                ))}
-              </div>
+            <div className="flex items-center justify-center gap-1.5" style={{ color: "var(--kudos)" }}>
+              <ThumbsUp className="h-4 w-4 fill-current" />
+              <span className="font-semibold">{recommendCount > 0 ? recommendCount : "–"}</span>
             </div>
           }
         />
-        <StatCard label="Bewertungen" value={profile.review_count ?? 0} />
+        <StatCard label="Reviews" value={profile.review_count ?? 0} />
       </div>
 
       {/* Preferred TCGs */}
@@ -263,7 +252,7 @@ export function PublicProfile({
       {reviews.length > 0 && (
         <div className="rounded-2xl bg-card border border-border p-5"
           style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <h2 className="text-sm font-semibold mb-3">Bewertungen ({reviews.length})</h2>
+          <h2 className="text-sm font-semibold mb-3">Empfehlungen ({reviews.length})</h2>
           <div className="flex flex-col gap-3">
             {reviews.map((r) => (
               <div key={r.id} className="flex gap-3">
@@ -274,19 +263,39 @@ export function PublicProfile({
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
+                  <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-medium">{r.profiles?.username ?? "Anonym"}</span>
-                    <div className="flex">
-                      {[1,2,3,4,5].map((i) => (
-                        <Star key={i} className="h-3 w-3" fill={i <= r.rating ? "#F59E0B" : "none"} stroke="#F59E0B"
-                          style={{ opacity: i <= r.rating ? 1 : 0.3 }} />
-                      ))}
-                    </div>
+                    {r.recommended && (
+                      <span
+                        className="inline-flex items-center gap-1 text-[11px] font-medium"
+                        style={{ color: "var(--kudos)" }}
+                      >
+                        <ThumbsUp className="h-3 w-3 fill-current" />
+                        Empfohlen
+                      </span>
+                    )}
                     <span className="text-[11px] text-muted-foreground ml-auto">
                       {format(new Date(r.created_at), "d. MMM yyyy", { locale: de })}
                     </span>
                   </div>
-                  {r.comment && <p className="text-xs text-muted-foreground leading-relaxed">{r.comment}</p>}
+                  {(r.tags?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {r.tags!.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                          style={{
+                            color: "var(--kudos)",
+                            backgroundColor: "color-mix(in oklch, var(--kudos) 12%, transparent)",
+                            border: "1px solid color-mix(in oklch, var(--kudos) 30%, transparent)",
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {r.comment && <p className="text-xs text-muted-foreground leading-relaxed mt-1">{r.comment}</p>}
                 </div>
               </div>
             ))}

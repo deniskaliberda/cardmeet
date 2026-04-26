@@ -7,13 +7,18 @@ import { submitReview } from "@/app/(app)/reviews/actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const TAGS = [
+// Kudos canon — kept in sync with the design system Reviews flow
+// (.tmp/design-bundle/.../README.md "Kudos-Tags").
+export const KUDOS_TAGS = [
+  "Fair",
   "Pünktlich",
-  "Fairer Spielstil",
-  "Kommunikativ",
-  "Angenehme Atmosphäre",
-  "Gerne wieder",
-];
+  "Geduldig erklärt",
+  "Lustig",
+  "Gutes Deck",
+  "Saubere Karten",
+  "Chill bei Regelfragen",
+  "Bringt Snacks",
+] as const;
 
 export function ReviewForm({
   sessionId,
@@ -47,10 +52,16 @@ export function ReviewForm({
     });
   }
 
+  const kudosBg = "color-mix(in oklch, var(--kudos) 12%, transparent)";
+  const kudosBorder = "color-mix(in oklch, var(--kudos) 35%, transparent)";
+
   if (submitted) {
     return (
-      <div className="rounded-[10px] bg-[#006b5c]/10 border-2 border-[#006b5c] p-3 text-center">
-        <div className="text-xs font-medium text-[#006b5c]">
+      <div
+        className="rounded-[10px] border-2 p-3 text-center"
+        style={{ background: kudosBg, borderColor: "var(--kudos)" }}
+      >
+        <div className="text-xs font-medium" style={{ color: "var(--kudos)" }}>
           👍 Bewertung abgeschickt
         </div>
       </div>
@@ -71,9 +82,14 @@ export function ReviewForm({
           className={cn(
             "flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-xs font-semibold transition-all cursor-pointer",
             thumbsUp
-              ? "border-[#006b5c] bg-[#006b5c]/10 text-[#006b5c]"
-              : "border-border bg-card text-muted-foreground hover:border-[#006b5c]/50 hover:text-[#006b5c]"
+              ? "bg-card"
+              : "border-border bg-card text-muted-foreground"
           )}
+          style={
+            thumbsUp
+              ? { borderColor: "var(--kudos)", background: kudosBg, color: "var(--kudos)" }
+              : undefined
+          }
         >
           <ThumbsUp className={cn("h-4 w-4", thumbsUp && "fill-current")} />
           Empfehle ich
@@ -87,31 +103,38 @@ export function ReviewForm({
         </button>
       </div>
 
-      {/* Tags — only shown after thumbs up */}
+      {/* Kudos tags — only shown after thumbs up */}
       {thumbsUp && (
         <>
           <div className="flex flex-wrap gap-1.5">
-            {TAGS.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => toggleTag(tag)}
-                className={cn(
-                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all cursor-pointer",
-                  selectedTags.includes(tag)
-                    ? "border-[#006b5c] bg-[#006b5c]/10 text-[#006b5c]"
-                    : "border-border text-muted-foreground hover:border-[#006b5c]/50"
-                )}
-              >
-                {selectedTags.includes(tag) ? "✓ " : ""}
-                {tag}
-              </button>
-            ))}
+            {KUDOS_TAGS.map((tag) => {
+              const active = selectedTags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all cursor-pointer",
+                    !active && "border-border text-muted-foreground"
+                  )}
+                  style={
+                    active
+                      ? { borderColor: kudosBorder, background: kudosBg, color: "var(--kudos)" }
+                      : undefined
+                  }
+                >
+                  {active ? "✓ " : ""}
+                  {tag}
+                </button>
+              );
+            })}
           </div>
 
           <Button
             size="sm"
-            className="rounded-xl text-xs bg-[#006b5c] hover:bg-[#005a4e]"
+            className="rounded-xl text-xs"
+            style={{ background: "var(--kudos)", color: "#fff" }}
             onClick={handleSubmit}
             disabled={pending}
           >

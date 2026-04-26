@@ -43,7 +43,7 @@ export function ReviewList({ reviews }: { reviews: Review[] }) {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-[#006b5c]">
+            <div className="flex items-center gap-1" style={{ color: "var(--kudos)" }}>
               <ThumbsUp className="h-3.5 w-3.5 fill-current" />
               <span className="text-xs font-semibold">Empfohlen</span>
             </div>
@@ -54,7 +54,12 @@ export function ReviewList({ reviews }: { reviews: Review[] }) {
               {review.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-[#006b5c]/30 bg-[#006b5c]/8 px-2.5 py-0.5 text-[11px] font-medium text-[#006b5c]"
+                  className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                  style={{
+                    color: "var(--kudos)",
+                    backgroundColor: "color-mix(in oklch, var(--kudos) 12%, transparent)",
+                    border: "1px solid color-mix(in oklch, var(--kudos) 30%, transparent)",
+                  }}
                 >
                   ✓ {tag}
                 </span>

@@ -128,7 +128,7 @@ export default async function LandingPage() {
                 Finde TCG-Spieler{" "}
                 <span
                   style={{
-                    background: "linear-gradient(135deg, #0066FF 0%, #00C2A8 55%, #FF6B35 100%)",
+                    background: "var(--brand-gradient)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",

@@ -5,6 +5,50 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ── Design-system tokens (theme-agnostic) ───────────────────────────────
+   Source of truth for TCG brand colors, power-level scale, slot status,
+   brand gradients, and elevation shadows. Mirrors
+   .tmp/design-bundle/cardmeet-design-system/project/colors_and_type.css —
+   keep these two in sync when adding tokens. */
+:root {
+  /* TCG brand colors — fixed by the games themselves */
+  --tcg-magic:    #E2A233;
+  --tcg-pokemon:  #FFCB05;
+  --tcg-yugioh:   #B91C1C;
+  --tcg-lorcana:  #6366F1;
+  --tcg-onepiece: #DC2626;
+  --tcg-fab:      #8B5CF6;
+  --tcg-weiss:    #F472B6;
+
+  /* Power-level scale (Magic Commander, mirrors lib/config/tcg.ts) */
+  --power-1: #10b981; /* Exhibition — theme decks */
+  --power-2: #3b82f6; /* Core       — precon-level */
+  --power-3: #a855f7; /* Upgraded   — up to 3 game changers */
+  --power-4: #f59e0b; /* Optimized  — banlist-only */
+  --power-5: #ef4444; /* cEDH       — competitive */
+
+  /* Session slot status */
+  --slot-free:   #00A878;
+  --slot-almost: #F59E0B;
+  --slot-full:   #E53E3E;
+
+  /* Kudos / recommendation accent (post-00011 review system) */
+  --kudos:       #00A878;
+
+  /* Brand gradients */
+  --brand-gradient: linear-gradient(135deg, #0066FF 0%, #00C2A8 55%, #FF6B35 100%);
+  --stat-gradient:  linear-gradient(135deg, #0066FF, #00C2A8);
+  --button-gradient: linear-gradient(135deg, var(--primary), oklch(0.55 0.20 285));
+
+  /* Elevation shadows */
+  --shadow-sm:           0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-card:         0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --shadow-pop:          0 2px 12px rgba(0, 0, 0, 0.08);
+  --shadow-deep:         0 4px 20px rgba(0, 0, 0, 0.12);
+  --shadow-primary:      0 2px 12px oklch(0.5 0.2 264 / 25%);
+  --shadow-primary-hover: 0 4px 20px oklch(0.5 0.2 264 / 35%);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

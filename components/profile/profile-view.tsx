@@ -283,7 +283,7 @@ function OverviewTab({
 
       {/* Recent Reviews */}
       <div>
-        <h3 className="text-sm font-medium mb-3">⭐ Neueste Bewertungen</h3>
+        <h3 className="text-sm font-medium mb-3">👍 Neueste Empfehlungen</h3>
         <ReviewList reviews={reviews} />
       </div>
     </div>
