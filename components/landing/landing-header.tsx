@@ -10,12 +10,15 @@ export function LandingHeader() {
       >
         <Link
           href="/"
-          className="text-primary"
           style={{
             fontFamily: "var(--font-mono), 'Fira Code', monospace",
             fontSize: "1.35em",
             fontWeight: 300,
             letterSpacing: "-1.5px",
+            background: "var(--brand-gradient)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
           }}
         >
           CARDMEET

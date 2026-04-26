@@ -319,15 +319,25 @@ function BrowserSessionCard({
       ? getPowerLevel(session.tcg, session.format, session.power_level)
       : undefined;
 
+  const accent = tcg?.color ?? "var(--primary)";
+
   return (
     <Link href={`/sessions/${session.id}`}>
       <div
         className={cn(
-          "relative rounded-xl bg-card p-3.5 cursor-pointer shadow-[0_1px_4px_oklch(0.224_0.018_275.1/5%)] tonal-transition",
-          "before:absolute before:top-0 before:left-0 before:w-[3px] before:h-full before:bg-primary before:opacity-0 before:transition-opacity before:rounded-l-xl",
-          "hover:translate-x-[3px] hover:shadow-[0_4px_16px_oklch(0.475_0.202_260.8/8%)] hover:before:opacity-100"
+          "relative overflow-hidden rounded-xl p-3.5 cursor-pointer shadow-[0_1px_4px_oklch(0.224_0.018_275.1/5%)] tonal-transition",
+          "hover:translate-x-[3px] hover:shadow-[0_4px_16px_oklch(0.475_0.202_260.8/8%)]"
         )}
+        style={{
+          background: `linear-gradient(135deg, color-mix(in oklch, ${accent} 6%, var(--card)) 0%, var(--card) 60%)`,
+        }}
       >
+        {/* TCG accent bar — design system: 4px left border in TCG color */}
+        <span
+          aria-hidden
+          className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
+          style={{ backgroundColor: accent, opacity: 0.85 }}
+        />
         {/* Header: title + badge */}
         <div className="flex items-start justify-between gap-2 mb-2">
           <div>
@@ -378,12 +388,21 @@ function BrowserSessionCard({
         {/* Footer: slots + host + join */}
         <div className="flex items-center justify-between pt-2.5">
           <div
-            className={cn(
-              "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium",
-              slotVariant === "open" && "bg-[oklch(0.472_0.087_178.6/8%)] text-[#006b5c]",
-              slotVariant === "warning" && "bg-[oklch(0.75_0.18_55/10%)] text-[#9a6700]",
-              slotVariant === "full" && "bg-[oklch(0.506_0.193_27.7/8%)] text-destructive"
-            )}
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
+            style={{
+              color:
+                slotVariant === "open"
+                  ? "var(--slot-free)"
+                  : slotVariant === "warning"
+                  ? "var(--slot-almost)"
+                  : "var(--slot-full)",
+              background:
+                slotVariant === "open"
+                  ? "color-mix(in oklch, var(--slot-free) 12%, transparent)"
+                  : slotVariant === "warning"
+                  ? "color-mix(in oklch, var(--slot-almost) 12%, transparent)"
+                  : "color-mix(in oklch, var(--slot-full) 12%, transparent)",
+            }}
           >
             <Users className="h-3 w-3" />
             <span>

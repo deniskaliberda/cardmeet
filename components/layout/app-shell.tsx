@@ -67,12 +67,15 @@ export function AppShell({
           {/* Logo */}
           <Link
             href="/dashboard"
-            className="text-primary"
             style={{
               fontFamily: "var(--font-mono), 'Fira Code', monospace",
               fontSize: "1.25em",
               fontWeight: 300,
               letterSpacing: "-1.5px",
+              background: "var(--brand-gradient)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
             }}
           >
             CARDMEET
