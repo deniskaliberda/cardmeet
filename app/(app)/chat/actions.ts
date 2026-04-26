@@ -144,7 +144,17 @@ export async function sendDM(receiverId: string, content: string) {
     content: trimmed,
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    // RLS blocks DMs to non-friends (see migration 00013). Translate the
+    // raw Postgres error into something humans understand.
+    if (error.code === "42501") {
+      return {
+        error:
+          "Du kannst nur an Freunde Nachrichten senden. Schick erst eine Freundschaftsanfrage.",
+      };
+    }
+    return { error: error.message };
+  }
 
   // Notification is created by DB trigger (00029_dm_friend_notification_triggers)
   return { success: true };

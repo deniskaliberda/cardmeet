@@ -19,23 +19,10 @@ export async function joinSession(sessionId: string) {
 
   if (error) return { error: error.message };
 
-  // Notify the host
-  const { data: session } = await supabase
-    .from("sessions")
-    .select("host_id, title, profiles(username)")
-    .eq("id", sessionId)
-    .single();
-
-  if (session?.host_id && session.host_id !== user.id) {
-    const profiles = session.profiles as { username: string } | { username: string }[] | null;
-    const joinerUsername = (Array.isArray(profiles) ? profiles[0] : profiles)?.username ?? "Jemand";
-    await supabase.from("notifications").insert({
-      user_id: session.host_id,
-      type: "session_join",
-      title: `${joinerUsername} ist deiner Session beigetreten`,
-      body: session.title,
-    });
-  }
+  // Notification is created by the participant_joined DB trigger
+  // (migration 00031). Server-side insert was using `session_join` which
+  // does not exist in the notifications type CHECK and notifications has
+  // no INSERT policy anyway — the row was silently dropped.
 
   revalidatePath(`/sessions/${sessionId}`);
   revalidatePath("/sessions");
@@ -58,24 +45,9 @@ export async function leaveSession(sessionId: string) {
 
   if (error) return { error: error.message };
 
-  // Notify first person on waitlist
-  const { data: next } = await (supabase as any)
-    .from("session_waitlist")
-    .select("user_id")
-    .eq("session_id", sessionId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
-
-  if (next) {
-    const { data: sess } = await supabase.from("sessions").select("title").eq("id", sessionId).single();
-    await supabase.from("notifications").insert({
-      user_id: next.user_id,
-      type: "session_join",
-      title: "Platz frei!",
-      body: sess?.title ?? "Eine Session hat einen freien Platz",
-    });
-  }
+  // Waitlist notification (if anyone is waiting) is also handled by the
+  // participant_left trigger in migration 00031. Server insert with
+  // `session_join` type was silently dropped here too.
 
   revalidatePath(`/sessions/${sessionId}`);
   revalidatePath("/sessions");
@@ -105,14 +77,9 @@ export async function removeParticipant(sessionId: string, userId: string) {
     .eq("id", sessionId)
     .single();
 
-  if (session) {
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      type: "session_removed",
-      title: "Du wurdest aus einer Session entfernt",
-      body: session.title,
-    });
-  }
+  // Notification handled by participant_kicked branch of the trigger
+  // in migration 00031 (status update 'joined' -> 'kicked').
+  void session;
 
   revalidatePath(`/sessions/${sessionId}`);
   return { success: true };
@@ -162,14 +129,15 @@ export async function inviteToSession(sessionId: string, friendIds: string[]) {
     .eq("id", user.id)
     .single();
 
-  await supabase.from("notifications").insert(
-    friendIds.map((friendId) => ({
-      user_id: friendId,
-      type: "session_invite",
-      title: `${sender?.username ?? "Jemand"} lädt dich ein`,
-      body: session.title,
-    }))
-  );
+  // Insert as the host via the SECURITY DEFINER helper notify_session_invite
+  // (migration 00031). Direct supabase insert is silently dropped because
+  // notifications has no INSERT policy.
+  await supabase.rpc("notify_session_invite", {
+    p_session_id: sessionId,
+    p_friend_ids: friendIds,
+    p_sender_name: sender?.username ?? "Jemand",
+    p_session_title: session.title,
+  });
 
   return { success: true };
 }
@@ -198,16 +166,10 @@ export async function cancelSession(sessionId: string) {
       .eq("status", "joined")
       .neq("user_id", user.id);
 
-    if (participants && participants.length > 0) {
-      await supabase.from("notifications").insert(
-        participants.map((p) => ({
-          user_id: p.user_id,
-          type: "session_cancelled",
-          title: "Session wurde abgesagt",
-          body: session.title,
-        }))
-      );
-    }
+    // Cancel notifications come from session_cancelled trigger in
+    // migration 00031, fired AFTER UPDATE on sessions when status moves
+    // to 'cancelled'.
+    void participants;
   }
 
   const { error } = await supabase

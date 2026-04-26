@@ -6,6 +6,7 @@ import { MessageCircle, X, ArrowLeft, Send } from "lucide-react";
 import { getDMConversations, getDMMessages, sendDM } from "@/app/(app)/chat/actions";
 import { formatDistanceToNow, format } from "date-fns";
 import { de } from "date-fns/locale";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDm } from "@/lib/dm-context";
 
@@ -146,6 +147,8 @@ export function DmPanel({ userId }: { userId: string }) {
       const result = await sendDM(activePartner.id, content);
       if (result && "error" in result) {
         setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+        toast.error(result.error);
+        setInput(content);
       } else {
         // Update conversation list
         setConversations((prev) => {
