@@ -29,6 +29,7 @@ export default async function DashboardPage() {
     { data: joinedAll },
     { data: activeLfgPosts },
     { data: friendships },
+    { data: sessionAlerts },
   ] = await Promise.all([
     supabase.rpc("nearby_sessions", { p_lat: userLat, p_lng: userLng, radius_km: 25 }).limit(5),
 
@@ -80,6 +81,13 @@ export default async function DashboardPage() {
       .select("requester_id, addressee_id, profiles!friendships_addressee_id_fkey(id, username, avatar_url), profiles!friendships_requester_id_fkey(id, username, avatar_url)")
       .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
       .eq("status", "accepted"),
+
+    // Session-Alerts (drives the dashboard badge bar)
+    supabase
+      .from("session_alerts")
+      .select("id, tcg, format, max_radius_km, days_of_week, status")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
 
   // ── Overview tab data ─────────────────────────────────────────────────────
@@ -220,6 +228,7 @@ export default async function DashboardPage() {
       initialMessages={initialMessages as any}
       currentUserId={user.id}
       friends={friends}
+      sessionAlerts={sessionAlerts ?? []}
     />
   );
 }
