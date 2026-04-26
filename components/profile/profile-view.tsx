@@ -102,9 +102,17 @@ export function ProfileView({
 
   return (
     <div className="space-y-6">
-      {/* Gradient Header */}
-      <div className="relative rounded-2xl bg-gradient-to-r from-primary to-[var(--secondary)] p-8 overflow-hidden">
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-white/8 rounded-full translate-x-[30%] -translate-y-[30%]" />
+      {/* Gradient Header — mockup signature blue→violet→pink with purple glow */}
+      <div
+        className="relative overflow-hidden rounded-2xl p-8"
+        style={{
+          background: "linear-gradient(135deg, #0066FF 0%, #5B3DFF 55%, #FF4D8A 100%)",
+          boxShadow: "var(--shadow-purple-lg)",
+        }}
+      >
+        {/* Soft white glow blob — mockup decoration */}
+        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-white/10 rounded-full translate-x-[30%] -translate-y-[30%]" />
+        <div className="absolute bottom-0 left-0 w-[180px] h-[180px] bg-white/5 rounded-full -translate-x-[20%] translate-y-[40%]" />
         <div className="flex items-center gap-6 relative">
           {/* Avatar with upload */}
           <div className="relative shrink-0">
@@ -119,41 +127,47 @@ export function ProfileView({
                 onChange={handleAvatarChange}
                 disabled={uploading}
               />
-              <Avatar className="h-24 w-24 border-4 border-white/30">
+              <Avatar className="h-24 w-24 border-4 border-white/40">
                 {avatarUrl && <AvatarImage src={avatarUrl} />}
-                <AvatarFallback className="bg-gradient-to-br from-primary to-[var(--secondary)] text-white text-3xl font-semibold">
+                <AvatarFallback className="bg-white/15 text-white text-3xl font-bold backdrop-blur-sm">
                   {profile.username.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute bottom-0.5 right-0.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white/40 bg-white/20 backdrop-blur-sm text-white">
+              <span className="absolute bottom-0.5 right-0.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white/50 bg-white/25 backdrop-blur-sm text-white">
                 <Camera className="h-3.5 w-3.5" />
               </span>
             </label>
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="font-heading text-3xl font-semibold text-white tracking-[-0.02em] mb-2">
+            <span
+              className="mono-eyebrow block text-white/85"
+              style={{ marginBottom: 4 }}
+            >
+              @{profile.username}
+            </span>
+            <h1 className="font-heading text-3xl font-bold text-white tracking-[-0.02em] mb-3">
               {profile.display_name ?? profile.username}
             </h1>
-            <div className="flex gap-2.5 flex-wrap mb-3">
+            <div className="flex gap-2 flex-wrap mb-3">
               {(profile.avg_rating ?? 0) > 0 && (
-                <span className="bg-white/20 rounded-full px-3.5 py-1 text-xs font-semibold text-white">
-                  👍 {profile.avg_rating} Empfehlungen
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-bold text-white border border-white/15">
+                  👍 {profile.avg_rating}
                 </span>
               )}
-              <span className="bg-white/20 rounded-full px-3.5 py-1 text-xs font-semibold text-white">
-                🎮 {profile.session_count ?? 0} Sessions
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-bold text-white border border-white/15">
+                🎮 {profile.session_count ?? 0}
               </span>
-              <span className="bg-white/20 rounded-full px-3.5 py-1 text-xs font-semibold text-white">
-                👥 {profile.friend_count ?? 0} Freunde
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-bold text-white border border-white/15">
+                👥 {profile.friend_count ?? 0}
               </span>
-              <span className="bg-[#006b5c]/35 rounded-full px-3.5 py-1 text-xs font-semibold text-white">
-                <Shield className="inline h-3 w-3 mr-1" />
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/30 backdrop-blur-sm px-3 py-1 text-xs font-bold text-white border border-emerald-300/30">
+                <Shield className="h-3 w-3" />
                 Verified
               </span>
             </div>
             {profile.bio && (
-              <p className="text-white/85 text-sm leading-relaxed line-clamp-2">
+              <p className="text-white/90 text-sm leading-relaxed line-clamp-2">
                 {profile.bio}
               </p>
             )}

@@ -129,10 +129,15 @@ export function HomeView({
           {/* 4. Deine Sessions (Upcoming) */}
           <UpcomingSessions sessions={allUpcoming} />
 
-          {/* 5. TCG Shortcuts */}
+          {/* 5. Empty-state onboarding — only when the user has nothing in flight yet */}
+          {allUpcoming.length === 0 && activeLfgPosts.length === 0 && (
+            <DashboardOnboardingCards />
+          )}
+
+          {/* 6. TCG Shortcuts */}
           <TcgShortcuts />
 
-          {/* 6. Friends playing */}
+          {/* 7. Friends playing */}
           <FriendsPlaying sessions={friendsSessions} />
         </div>
       )}
@@ -150,5 +155,87 @@ export function HomeView({
         />
       )}
     </div>
+  );
+}
+
+// ── Empty-state onboarding cards ──────────────────────────────────────
+// Compact 3-step explainer for users who have nothing in flight yet.
+// Mirrors the landing-page "So funktioniert's" treatment from the design
+// bundle (mockup gradient + step number + glow on accent border).
+const ONBOARD_STEPS = [
+  {
+    step: "01",
+    icon: "🗺️",
+    title: "Karte oder Liste durchsuchen",
+    desc: "Sieh, wo gerade gespielt wird — direkt auf der Karte oder in der Liste.",
+    accent: "linear-gradient(135deg, #0066FF, #5B3DFF)",
+    glow: "0 4px 16px rgba(0,102,255,0.30)",
+  },
+  {
+    step: "02",
+    icon: "🎯",
+    title: "LFG starten oder beitreten",
+    desc: "Sag wann & wo — wir matchen dich. Oder klick dich in eine offene Runde.",
+    accent: "linear-gradient(135deg, #5B3DFF, #FF4D8A)",
+    glow: "0 4px 16px rgba(91,61,255,0.40)",
+  },
+  {
+    step: "03",
+    icon: "👍",
+    title: "Spielen & Kudos vergeben",
+    desc: "Triff andere Spieler vor Ort und gib am Ende einen Daumen hoch.",
+    accent: "linear-gradient(135deg, #FF4D8A, #FF6B35)",
+    glow: "0 4px 16px rgba(255,77,138,0.30)",
+  },
+] as const;
+
+function DashboardOnboardingCards() {
+  return (
+    <section>
+      <div className="mb-3">
+        <span className="mono-eyebrow block" style={{ color: "#FF4D8A" }}>
+          Erste Schritte
+        </span>
+        <h2 className="mt-1 font-heading text-lg font-bold tracking-tight">
+          So funktioniert&apos;s
+        </h2>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {ONBOARD_STEPS.map((item) => (
+          <div
+            key={item.step}
+            className="relative overflow-hidden rounded-xl border bg-card p-4"
+            style={{
+              borderColor: "color-mix(in oklch, #5B3DFF 22%, var(--border))",
+              boxShadow: item.glow,
+            }}
+          >
+            <span
+              aria-hidden
+              className="absolute left-0 right-0 top-0 h-[3px]"
+              style={{ background: item.accent }}
+            />
+            <div
+              className="absolute right-3 top-2 text-2xl font-bold leading-none"
+              style={{
+                fontFamily: "var(--font-mono), 'Fira Code', monospace",
+                background: item.accent,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                opacity: 0.5,
+              }}
+            >
+              {item.step}
+            </div>
+            <div className="mb-2 text-2xl">{item.icon}</div>
+            <h3 className="mb-1 font-heading text-sm font-bold tracking-tight">
+              {item.title}
+            </h3>
+            <p className="text-xs leading-relaxed text-muted-foreground">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

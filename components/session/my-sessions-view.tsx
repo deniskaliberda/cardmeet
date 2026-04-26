@@ -260,13 +260,36 @@ function SidebarItem({
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2.5 rounded-[10px] p-2.5 text-left transition-all cursor-pointer",
+        "relative flex items-center gap-2.5 overflow-hidden rounded-[10px] p-2.5 text-left transition-all cursor-pointer",
         isSelected
           ? "bg-primary/15 border-2 border-primary"
           : "bg-card border-2 border-transparent hover:bg-[var(--surface-container-low)]",
         "shadow-[0_1px_3px_oklch(0.224_0.018_275.1/5%)]"
       )}
+      style={
+        isToday
+          ? { boxShadow: "var(--shadow-purple-sm)" }
+          : undefined
+      }
     >
+      {/* "Heute"-Badge — gradient pill in the corner with pulsing dot */}
+      {isToday && (
+        <span
+          className="absolute -right-px -top-px inline-flex items-center gap-1 rounded-bl-[10px] rounded-tr-[10px] px-2 py-0.5 text-[9px] font-bold text-white"
+          style={{
+            background: "var(--gradient-lfg)",
+            boxShadow: "0 1px 8px rgba(255,77,138,0.45)",
+            letterSpacing: "0.06em",
+          }}
+        >
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+          </span>
+          HEUTE
+        </span>
+      )}
+
       {/* TCG Icon */}
       <div
         className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
@@ -289,17 +312,17 @@ function SidebarItem({
       </div>
 
       {/* Status + count */}
-      <div className="shrink-0 text-right">
-        <div
-          className={cn(
-            "text-xs font-medium whitespace-nowrap",
-            isToday && "text-primary",
-            isHost && "text-[#006b5c]",
-            !isToday && !isHost && "text-primary"
-          )}
-        >
-          {isToday ? "● Heute" : isHost ? "🏠 Host" : "Angemeldet"}
-        </div>
+      <div className="shrink-0 pr-1 text-right">
+        {!isToday && (
+          <div
+            className={cn(
+              "text-xs font-medium whitespace-nowrap",
+              isHost ? "text-[#006b5c]" : "text-primary"
+            )}
+          >
+            {isHost ? "🏠 Host" : "Angemeldet"}
+          </div>
+        )}
         <div className="text-xs text-muted-foreground">
           {session.current_players}/{session.max_players}
         </div>

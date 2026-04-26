@@ -300,46 +300,72 @@ export function LfgQuickForm({ preferredTcgs, userLat, userLng, userCity, onClos
 
       {/* Days (same pattern as Alert) */}
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold">Tage</label>
+        <label className="mono-eyebrow block" style={{ color: "var(--muted-foreground)" }}>
+          Tage
+        </label>
         <div className="flex gap-1.5">
-          {DAY_LABELS.map((label, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => toggleDay(i)}
-              className={cn(
-                "flex-1 rounded-lg border-2 py-2.5 text-xs font-semibold transition-colors cursor-pointer",
-                days.includes(i)
-                  ? "border-primary bg-primary/20 text-primary"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/50"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          {DAY_LABELS.map((label, i) => {
+            const active = days.includes(i);
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => toggleDay(i)}
+                className={cn(
+                  "flex-1 rounded-lg border py-2.5 text-xs font-bold transition-all cursor-pointer",
+                  !active && "border-border bg-card text-muted-foreground"
+                )}
+                style={
+                  active
+                    ? {
+                        borderColor: "transparent",
+                        background: "var(--gradient-primary)",
+                        color: "#fff",
+                        boxShadow: "var(--shadow-purple-sm)",
+                      }
+                    : undefined
+                }
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Time presets */}
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold">Uhrzeit</label>
+        <label className="mono-eyebrow block" style={{ color: "var(--muted-foreground)" }}>
+          Uhrzeit
+        </label>
         <div className="flex gap-1.5">
-          {TIME_PRESETS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTimePreset(t.id)}
-              className={cn(
-                "flex-1 rounded-lg border-2 py-2.5 text-center transition-colors cursor-pointer",
-                timePreset === t.id
-                  ? "border-primary bg-primary/20 text-primary"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/50"
-              )}
-            >
-              <div className="text-xs font-semibold">{t.label}</div>
-              <div className="text-[11px] font-normal opacity-80">{t.from}–{t.to} Uhr</div>
-            </button>
-          ))}
+          {TIME_PRESETS.map((t) => {
+            const active = timePreset === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTimePreset(t.id)}
+                className={cn(
+                  "flex-1 rounded-lg border py-2.5 text-center transition-all cursor-pointer",
+                  !active && "border-border bg-card text-muted-foreground"
+                )}
+                style={
+                  active
+                    ? {
+                        borderColor: "transparent",
+                        background: "var(--gradient-primary)",
+                        color: "#fff",
+                        boxShadow: "var(--shadow-purple-sm)",
+                      }
+                    : undefined
+                }
+              >
+                <div className="text-xs font-bold">{t.label}</div>
+                <div className="text-[11px] font-normal opacity-85">{t.from}–{t.to} Uhr</div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -370,23 +396,35 @@ export function LfgQuickForm({ preferredTcgs, userLat, userLng, userCity, onClos
         . Sobald ein Match gefunden wird, erstellen wir automatisch eine Session!
       </div>
 
-      {/* Buttons */}
+      {/* Buttons — primary uses the LFG signature gradient + pink-tinted glow */}
       <div className="flex gap-2">
-        <Button
+        <button
+          type="button"
           onClick={handleSubmit}
           disabled={pending || lat === null || days.length === 0}
-          className="flex-1 rounded-xl text-xs"
-          size="sm"
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold text-white transition-all",
+            (pending || lat === null || days.length === 0)
+              ? "cursor-default opacity-60"
+              : "cursor-pointer hover:-translate-y-px"
+          )}
+          style={{
+            background: "var(--gradient-lfg)",
+            boxShadow: "var(--shadow-pink-lg)",
+          }}
         >
           {pending ? (
             <>
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Wird erstellt...
             </>
           ) : (
-            "LFG starten"
+            <>
+              <span style={{ fontSize: 16 }}>🎯</span>
+              LFG starten
+            </>
           )}
-        </Button>
+        </button>
         <Button
           onClick={onClose}
           disabled={pending}

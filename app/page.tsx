@@ -191,7 +191,17 @@ export default async function LandingPage() {
         {/* ── How it works ── */}
         <FadeIn delay={0}>
           <section className="mb-12">
-            <h2 className="mb-6 text-center text-xl font-semibold">So funktioniert CardMeet</h2>
+            <div className="mb-6 text-center">
+              <span
+                className="mono-eyebrow inline-block"
+                style={{ color: "#FF4D8A" }}
+              >
+                In 3 Schritten zum Spiel
+              </span>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight">
+                So funktioniert CardMeet
+              </h2>
+            </div>
             <div className="grid gap-4 sm:grid-cols-3">
               {[
                 {
@@ -199,37 +209,58 @@ export default async function LandingPage() {
                   icon: "🗺️",
                   title: "Sessions auf der Karte finden",
                   desc: "Sieh auf einen Blick, wo in deiner Stadt gespielt wird — ohne Account nötig.",
+                  accent: "linear-gradient(135deg, #0066FF, #5B3DFF)",
+                  glow: "0 4px 16px rgba(0,102,255,0.30)",
                 },
                 {
                   step: "02",
-                  icon: "✋",
-                  title: "Beitreten oder erstellen",
-                  desc: "Tritt einer offenen Runde bei oder erstelle deine eigene Session in wenigen Sekunden.",
+                  icon: "🎯",
+                  title: "LFG starten oder beitreten",
+                  desc: "Sag wann & wo — wir matchen dich automatisch. Oder klick dich in eine offene Runde.",
+                  accent: "linear-gradient(135deg, #5B3DFF, #FF4D8A)",
+                  glow: "0 4px 16px rgba(91,61,255,0.40)",
                 },
                 {
                   step: "03",
-                  icon: "⭐",
-                  title: "Spielen & bewerten",
-                  desc: "Triff andere Spieler vor Ort, bau dein Netzwerk auf und hinterlasse ein ehrliches Rating.",
+                  icon: "👍",
+                  title: "Spielen & Kudos vergeben",
+                  desc: "Triff andere Spieler vor Ort, bau dein Netzwerk auf und gib am Ende einen Daumen hoch.",
+                  accent: "linear-gradient(135deg, #FF4D8A, #FF6B35)",
+                  glow: "0 4px 16px rgba(255,77,138,0.30)",
                 },
               ].map((item) => (
                 <div
                   key={item.step}
-                  className="relative rounded-2xl border-2 border-border bg-card p-6"
-                  style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+                  className="group relative overflow-hidden rounded-2xl border bg-card p-6 transition-all hover:-translate-y-0.5"
+                  style={{
+                    borderColor: "color-mix(in oklch, #5B3DFF 22%, var(--border))",
+                    boxShadow: item.glow,
+                  }}
                 >
-                  <div className="mb-4 text-3xl">{item.icon}</div>
+                  {/* Top gradient bar — mockup signature */}
+                  <span
+                    aria-hidden
+                    className="absolute left-0 right-0 top-0 h-[3px]"
+                    style={{ background: item.accent }}
+                  />
+                  {/* Step number — big, mono, faint, mockup-style */}
                   <div
-                    className="absolute right-5 top-5 text-xs font-semibold"
+                    className="absolute right-5 top-4 text-3xl font-bold leading-none"
                     style={{
                       fontFamily: "var(--font-mono), 'Fira Code', monospace",
-                      color: "var(--primary)",
-                      opacity: 0.35,
+                      background: item.accent,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      opacity: 0.5,
                     }}
                   >
                     {item.step}
                   </div>
-                  <h3 className="mb-2 font-semibold">{item.title}</h3>
+                  <div className="mb-4 text-4xl">{item.icon}</div>
+                  <h3 className="mb-2 font-heading text-base font-bold tracking-tight">
+                    {item.title}
+                  </h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
                 </div>
               ))}
