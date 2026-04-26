@@ -35,9 +35,10 @@ export function NotificationBell({ userId }: { userId: string }) {
         if (data) setNotifications(data);
       });
 
-    // Subscribe to new notifications
+    // Subscribe to changes — cover INSERT, UPDATE (read-state sync between
+    // tabs/devices) and DELETE (so dismissing on phone reflects on desktop).
     const channel = supabase
-      .channel("notifications")
+      .channel(`notifications:${userId}`)
       .on(
         "postgres_changes",
         {
@@ -48,6 +49,35 @@ export function NotificationBell({ userId }: { userId: string }) {
         },
         (payload) => {
           setNotifications((prev) => [payload.new as Notification, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Notification;
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === updated.id ? { ...n, ...updated } : n))
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const removed = payload.old as { id?: string };
+          if (!removed.id) return;
+          setNotifications((prev) => prev.filter((n) => n.id !== removed.id));
         }
       )
       .subscribe();
