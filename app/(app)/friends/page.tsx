@@ -2,8 +2,29 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AddFriendSearch } from "@/components/friends/add-friend-search";
 import { FriendList } from "@/components/friends/friend-list";
+import { getProfileRatings } from "@/lib/queries/ratings";
 
 export const metadata = { title: "Freunde" };
+
+type ProfileMini = { id: string; username: string; avatar_url: string | null };
+type FriendshipRow = {
+  id: string;
+  status: "accepted" | "pending" | "blocked";
+  requester_id: string;
+  addressee_id: string;
+  ["profiles!friendships_addressee_id_fkey"]: ProfileMini | null;
+  ["profiles!friendships_requester_id_fkey"]: ProfileMini | null;
+};
+
+type FriendEntry = {
+  friendship_id: string;
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+  avg_rating: number | null;
+  status: "accepted" | "pending";
+  is_incoming: boolean;
+};
 
 export default async function FriendsPage() {
   const supabase = await createClient();
@@ -20,21 +41,35 @@ export default async function FriendsPage() {
     .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
     .in("status", ["accepted", "pending"]);
 
-  const friends: any[] = [];
-  const pendingRequests: any[] = [];
+  const rows = (friendships ?? []) as unknown as FriendshipRow[];
+  const otherIds = rows
+    .map((f) =>
+      f.requester_id === user.id
+        ? f["profiles!friendships_addressee_id_fkey"]?.id
+        : f["profiles!friendships_requester_id_fkey"]?.id
+    )
+    .filter((id): id is string => Boolean(id));
 
-  for (const f of friendships ?? []) {
+  const ratingMap = await getProfileRatings(supabase, otherIds);
+
+  const friends: FriendEntry[] = [];
+  const pendingRequests: FriendEntry[] = [];
+
+  for (const f of rows) {
     const isRequester = f.requester_id === user.id;
     const otherProfile = isRequester
-      ? (f as any)["profiles!friendships_addressee_id_fkey"]
-      : (f as any)["profiles!friendships_requester_id_fkey"];
+      ? f["profiles!friendships_addressee_id_fkey"]
+      : f["profiles!friendships_requester_id_fkey"];
 
-    const entry = {
+    if (!otherProfile?.id) continue;
+    if (f.status === "blocked") continue;
+
+    const entry: FriendEntry = {
       friendship_id: f.id,
-      user_id: otherProfile?.id ?? "",
-      username: otherProfile?.username ?? "Unbekannt",
-      avatar_url: otherProfile?.avatar_url ?? null,
-      avg_rating: null,
+      user_id: otherProfile.id,
+      username: otherProfile.username ?? "Unbekannt",
+      avatar_url: otherProfile.avatar_url ?? null,
+      avg_rating: ratingMap.get(otherProfile.id) ?? null,
       status: f.status as "accepted" | "pending",
       is_incoming: !isRequester,
     };

@@ -62,7 +62,7 @@ type Message = {
   profiles: { username: string; avatar_url: string | null } | null;
 };
 
-type Friend = { user_id: string; username: string; avatar_url: string | null; avg_rating: null };
+type Friend = { user_id: string; username: string; avatar_url: string | null; avg_rating: number | null };
 
 export function MySessionsView({
   upcoming,

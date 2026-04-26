@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build + lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Build only needs the URL/key shape to be present — anon key never
+      # leaves the browser. Use harmless placeholders so `next build` can
+      # construct the Supabase client. Real values stay in Vercel env.
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Build is the hard gate — TypeScript compile + page collection has to
+      # pass before anything reaches Vercel. This is what would have caught
+      # the 4 failed-prod-deploys on 2026-04-21.
+      - name: Build
+        run: npm run build
+
+      # Lint currently has historical `no-explicit-any` debt. Run it for
+      # visibility but don't block while the count is being chipped down —
+      # flip `continue-on-error` to false once errors are at zero.
+      - name: Lint
+        continue-on-error: true
+        run: npm run lint

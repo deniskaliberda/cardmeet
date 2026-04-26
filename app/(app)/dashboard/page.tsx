@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { HomeView } from "@/components/home/home-view";
+import { getProfileRatings } from "@/lib/queries/ratings";
 
 export const metadata = { title: "Home — CardMeet" };
 
@@ -17,7 +18,10 @@ export default async function DashboardPage() {
 
   const userLat = (profile as any)?.city_lat ?? 52.52;
   const userLng = (profile as any)?.city_lng ?? 13.405;
-  const now = new Date().toISOString();
+  // Single render-time anchor — keeps every comparison stable across the
+  // request and avoids React's no-Date.now()-during-render rule.
+  const renderedAt = new Date();
+  const now = renderedAt.toISOString();
 
   const [
     { data: nearbySessions },
@@ -28,6 +32,7 @@ export default async function DashboardPage() {
     { data: joinedAll },
     { data: activeLfgPosts },
     { data: friendships },
+    { data: sessionAlerts },
   ] = await Promise.all([
     supabase.rpc("nearby_sessions", { p_lat: userLat, p_lng: userLng, radius_km: 25 }).limit(5),
 
@@ -79,12 +84,19 @@ export default async function DashboardPage() {
       .select("requester_id, addressee_id, profiles!friendships_addressee_id_fkey(id, username, avatar_url), profiles!friendships_requester_id_fkey(id, username, avatar_url)")
       .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
       .eq("status", "accepted"),
+
+    // Session-Alerts (drives the dashboard badge bar)
+    supabase
+      .from("session_alerts")
+      .select("id, tcg, format, max_radius_km, days_of_week, status")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
 
   // ── Overview tab data ─────────────────────────────────────────────────────
   const joinedUpcomingCompact = (participations ?? [])
     .map((p) => (p as any).sessions)
-    .filter((s: any) => s && new Date(s.scheduled_at) > new Date());
+    .filter((s: any) => s && new Date(s.scheduled_at) > renderedAt);
 
   const allUpcoming = [
     ...(hostedUpcoming ?? []),
@@ -123,8 +135,8 @@ export default async function DashboardPage() {
     ...(joinedSessionsFull ?? []).map((s) => ({ ...s, role: "participant" as const })),
   ].sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
 
-  const myUpcoming = allSessions.filter((s) => new Date(s.scheduled_at) > new Date());
-  const myPast = allSessions.filter((s) => new Date(s.scheduled_at) <= new Date());
+  const myUpcoming = allSessions.filter((s) => new Date(s.scheduled_at) > renderedAt);
+  const myPast = allSessions.filter((s) => new Date(s.scheduled_at) <= renderedAt);
   const firstSession = myUpcoming[0] ?? myPast[0] ?? null;
 
   const [initialParticipants, initialMessages] = firstSession
@@ -145,13 +157,19 @@ export default async function DashboardPage() {
       ])
     : [[], []];
 
-  const friends = (friendships ?? []).map((f) => {
+  const friendsRaw = (friendships ?? []).map((f) => {
     const isRequester = f.requester_id === user.id;
     const p = isRequester
       ? (f as any)["profiles!friendships_addressee_id_fkey"]
       : (f as any)["profiles!friendships_requester_id_fkey"];
-    return { user_id: p?.id ?? "", username: p?.username ?? "Unbekannt", avatar_url: p?.avatar_url ?? null, avg_rating: null };
+    return { user_id: p?.id ?? "", username: p?.username ?? "Unbekannt", avatar_url: p?.avatar_url ?? null };
   }).filter((f) => f.user_id);
+
+  const ratingMap = await getProfileRatings(supabase, friendsRaw.map((f) => f.user_id));
+  const friends = friendsRaw.map((f) => ({
+    ...f,
+    avg_rating: ratingMap.get(f.user_id) ?? null,
+  }));
 
   // Fetch friends' upcoming sessions
   const friendIds = friends.map((f) => f.user_id).filter(Boolean);
@@ -166,7 +184,7 @@ export default async function DashboardPage() {
       .limit(10);
 
     friendsSessions = (friendParticipations ?? [])
-      .filter((fp: any) => fp.sessions && new Date(fp.sessions.scheduled_at) > new Date())
+      .filter((fp: any) => fp.sessions && new Date(fp.sessions.scheduled_at) > renderedAt)
       .map((fp: any) => ({
         friend_username: (fp.profiles as any)?.username ?? "Unbekannt",
         friend_avatar_url: (fp.profiles as any)?.avatar_url ?? null,
@@ -189,7 +207,7 @@ export default async function DashboardPage() {
       .slice(0, 5);
   }
 
-  const hour = new Date().getHours();
+  const hour = renderedAt.getHours();
   const greeting = hour < 12 ? "Guten Morgen" : hour < 18 ? "Guten Tag" : "Guten Abend";
 
   return (
@@ -213,6 +231,7 @@ export default async function DashboardPage() {
       initialMessages={initialMessages as any}
       currentUserId={user.id}
       friends={friends}
+      sessionAlerts={sessionAlerts ?? []}
     />
   );
 }

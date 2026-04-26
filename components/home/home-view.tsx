@@ -9,6 +9,7 @@ import { UpcomingSessions } from "@/components/home/upcoming-sessions";
 import { FriendsPlaying } from "@/components/home/friends-playing";
 import { TcgShortcuts } from "@/components/home/tcg-shortcuts";
 import { MySessionsView } from "@/components/session/my-sessions-view";
+import { ActiveAlertsBar } from "@/components/alerts/active-alerts-bar";
 
 type Props = {
   username: string;
@@ -32,6 +33,14 @@ type Props = {
   initialMessages: any[];
   currentUserId: string;
   friends: any[];
+  sessionAlerts?: {
+    id: string;
+    tcg: string;
+    format: string | null;
+    max_radius_km: number;
+    days_of_week: number[];
+    status: string;
+  }[];
 };
 
 const TABS = [
@@ -61,6 +70,7 @@ export function HomeView({
   initialMessages,
   currentUserId,
   friends,
+  sessionAlerts = [],
 }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
 
@@ -73,6 +83,7 @@ export function HomeView({
             {greeting}, {username} 👋
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">Was steht heute an?</p>
+          <ActiveAlertsBar alerts={sessionAlerts} />
         </div>
 
         <div className="flex gap-0 rounded-[10px] bg-card p-[3px] shadow-[0_2px_8px_oklch(0.224_0.018_275.1/8%),0_0_0_1px_oklch(0.829_0.026_275.8/10%)] shrink-0">

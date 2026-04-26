@@ -137,7 +137,7 @@ export function OnboardingForm({ preview = false }: { preview?: boolean }) {
     }
 
     toast.success("Willkommen bei CardMeet!");
-    router.push("/sessions");
+    router.push("/dashboard");
     router.refresh();
   }
 
