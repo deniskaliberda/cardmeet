@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MySessionsView } from "@/components/session/my-sessions-view";
+import { getProfileRatings } from "@/lib/queries/ratings";
 
 export const metadata = { title: "Meine Sessions" };
 
@@ -84,7 +85,7 @@ export default async function MySessionsPage() {
     .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
     .eq("status", "accepted");
 
-  const friends = ((friendships ?? []) as unknown as FriendshipRow[]).map((f) => {
+  const friendsRaw = ((friendships ?? []) as unknown as FriendshipRow[]).map((f) => {
     const isRequester = f.requester_id === user.id;
     const profile = isRequester
       ? f["profiles!friendships_addressee_id_fkey"]
@@ -93,9 +94,14 @@ export default async function MySessionsPage() {
       user_id: profile?.id ?? "",
       username: profile?.username ?? "Unbekannt",
       avatar_url: profile?.avatar_url ?? null,
-      avg_rating: null as number | null,
     };
   }).filter((f) => f.user_id);
+
+  const ratingMap = await getProfileRatings(supabase, friendsRaw.map((f) => f.user_id));
+  const friends = friendsRaw.map((f) => ({
+    ...f,
+    avg_rating: ratingMap.get(f.user_id) ?? null,
+  }));
 
   // Pre-load data for first upcoming session (or first past if no upcoming)
   const firstSession = upcoming[0] ?? past[0] ?? null;

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { HomeView } from "@/components/home/home-view";
+import { getProfileRatings } from "@/lib/queries/ratings";
 
 export const metadata = { title: "Home — CardMeet" };
 
@@ -145,13 +146,19 @@ export default async function DashboardPage() {
       ])
     : [[], []];
 
-  const friends = (friendships ?? []).map((f) => {
+  const friendsRaw = (friendships ?? []).map((f) => {
     const isRequester = f.requester_id === user.id;
     const p = isRequester
       ? (f as any)["profiles!friendships_addressee_id_fkey"]
       : (f as any)["profiles!friendships_requester_id_fkey"];
-    return { user_id: p?.id ?? "", username: p?.username ?? "Unbekannt", avatar_url: p?.avatar_url ?? null, avg_rating: null };
+    return { user_id: p?.id ?? "", username: p?.username ?? "Unbekannt", avatar_url: p?.avatar_url ?? null };
   }).filter((f) => f.user_id);
+
+  const ratingMap = await getProfileRatings(supabase, friendsRaw.map((f) => f.user_id));
+  const friends = friendsRaw.map((f) => ({
+    ...f,
+    avg_rating: ratingMap.get(f.user_id) ?? null,
+  }));
 
   // Fetch friends' upcoming sessions
   const friendIds = friends.map((f) => f.user_id).filter(Boolean);
