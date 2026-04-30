@@ -72,15 +72,12 @@ export async function createSession(formData: FormData) {
         .eq("id", user.id)
         .single();
 
-      await supabase.from("notifications").insert(
-        friendIds.map((friendId) => ({
-          user_id: friendId,
-          type: "session_invite",
-          title: `${sender?.username ?? "Jemand"} lädt dich ein`,
-          body: parsed.data.title,
-          data: { session_id: session.id },
-        }))
-      );
+      await supabase.rpc("notify_session_invite", {
+        p_session_id: session.id,
+        p_friend_ids: friendIds,
+        p_sender_name: sender?.username ?? "Jemand",
+        p_session_title: parsed.data.title,
+      });
     }
   }
 

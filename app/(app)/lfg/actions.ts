@@ -18,6 +18,14 @@ type CreateLfgInput = {
   time_to: number;
 };
 
+type CompleteLfgMatchResult = {
+  success: boolean;
+  result_status: "waiting" | "matched" | "unauthenticated" | "not_found" | "forbidden" | string;
+  lfg_post_id: string;
+  session_id: string | null;
+  message: string | null;
+};
+
 export async function createLfgPost(input: CreateLfgInput) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -26,7 +34,6 @@ export async function createLfgPost(input: CreateLfgInput) {
   const parsed = createLfgSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
 
-  // Max 3 active posts per user
   const { count } = await supabase
     .from("lfg_posts")
     .select("*", { count: "exact", head: true })
@@ -35,7 +42,6 @@ export async function createLfgPost(input: CreateLfgInput) {
 
   if ((count ?? 0) >= 3) return { error: "Maximal 3 aktive LFG-Posts erlaubt" };
 
-  // Calculate a representative available_from/to for the next matching day
   const now = new Date();
   const nextDay = findNextMatchingDay(parsed.data.days_of_week, now);
   const availableFrom = new Date(nextDay);
@@ -43,7 +49,6 @@ export async function createLfgPost(input: CreateLfgInput) {
   const availableTo = new Date(nextDay);
   availableTo.setHours(parsed.data.time_to, 0, 0, 0);
 
-  // Insert ONE LFG post covering all selected days
   const { data: post, error: insertError } = await supabase
     .from("lfg_posts")
     .insert({
@@ -61,141 +66,47 @@ export async function createLfgPost(input: CreateLfgInput) {
       available_from: availableFrom.toISOString(),
       available_to: availableTo.toISOString(),
     })
-    .select("id, tcg, format, power_level, lat, lng, location_label, available_from, available_to")
+    .select("id, tcg, format")
     .single();
 
   if (insertError || !post) return { error: insertError?.message ?? "Fehler beim Erstellen" };
 
-  // Find matches
-  const { data: matches } = await supabase.rpc("find_lfg_matches", {
-    new_post_id: post.id,
-  });
-
-  if (!matches || matches.length === 0) {
-    revalidatePath("/dashboard");
-    return { success: true, status: "waiting" as const, postId: post.id };
-  }
-
-  // Verify time overlap >= 1 hour
-  const validMatches = matches.filter((m: any) => {
-    const overlapFrom = Math.max(parsed.data.time_from, m.post_available_from ? new Date(m.post_available_from).getHours() : 0);
-    const overlapTo = Math.min(parsed.data.time_to, m.post_available_to ? new Date(m.post_available_to).getHours() : 24);
-    return (overlapTo - overlapFrom) >= 1;
-  });
-
-  if (validMatches.length === 0) {
-    revalidatePath("/dashboard");
-    return { success: true, status: "waiting" as const, postId: post.id };
-  }
-
-  // Re-check that matched posts are still active (race condition guard)
-  const matchPostIds = validMatches.map((m: any) => m.post_id);
-  const { data: stillActive } = await supabase
-    .from("lfg_posts")
-    .select("id")
-    .in("id", matchPostIds)
-    .eq("status", "active");
-
-  const confirmedMatches = validMatches.filter((m: any) =>
-    stillActive?.some((a: any) => a.id === m.post_id)
-  );
-
-  if (confirmedMatches.length === 0) {
-    revalidatePath("/dashboard");
-    return { success: true, status: "waiting" as const, postId: post.id };
-  }
-
-  // Calculate centroid of all players
-  const allPlayers = [
-    { lat: post.lat, lng: post.lng },
-    ...confirmedMatches.map((m: any) => ({ lat: m.post_lat, lng: m.post_lng })),
-  ];
-  const centroidLat = allPlayers.reduce((sum, p) => sum + p.lat, 0) / allPlayers.length;
-  const centroidLng = allPlayers.reduce((sum, p) => sum + p.lng, 0) / allPlayers.length;
-
-  // Find nearest shop
-  const { data: shops } = await supabase.rpc("find_nearest_shop_for_lfg", {
-    p_lat: centroidLat,
-    p_lng: centroidLng,
-    p_tcg: post.tcg,
-    p_radius_km: 15,
-  });
-  const shop = shops?.[0] ?? null;
-
-  // Calculate scheduled_at — next matching day at midpoint of time window
-  const scheduledAt = new Date(nextDay);
-  const midHour = Math.floor((parsed.data.time_from + parsed.data.time_to) / 2);
-  scheduledAt.setHours(midHour, 0, 0, 0);
-
-  // Get max_players from format config
   const tcgConfig = getTCG(post.tcg);
   const formatConfig = post.format ? getFormat(post.tcg, post.format) : tcgConfig?.formats[0];
   const maxPlayers = formatConfig?.playerCount.default ?? 4;
+  const sessionTitle = `LFG: ${tcgConfig?.shortName ?? post.tcg}${post.format ? ` ${formatConfig?.name ?? post.format}` : ""}`;
 
-  const sessionLat = shop?.shop_lat ?? centroidLat;
-  const sessionLng = shop?.shop_lng ?? centroidLng;
+  const { data: completionRows, error: completionError } = await supabase.rpc("complete_lfg_match", {
+    p_post_id: post.id,
+    p_session_title: sessionTitle,
+    p_session_format: post.format ?? formatConfig?.id ?? "casual",
+    p_max_players: Math.max(maxPlayers, 2),
+  });
 
-  // Auto-create session
-  const { data: session, error: sessionError } = await supabase
-    .from("sessions")
-    .insert({
-      host_id: user.id,
-      title: `LFG: ${tcgConfig?.shortName ?? post.tcg}${post.format ? ` ${formatConfig?.name ?? post.format}` : ""}`,
-      tcg: post.tcg,
-      format: post.format ?? formatConfig?.id ?? null,
-      power_level: post.power_level ?? null,
-      max_players: Math.max(maxPlayers, allPlayers.length),
-      city: shop?.shop_city ?? post.location_label ?? "Berlin",
-      location_name: shop?.shop_name ?? null,
-      location: `SRID=4326;POINT(${sessionLng} ${sessionLat})`,
-      scheduled_at: scheduledAt.toISOString(),
-      shop_id: shop?.shop_id ?? null,
-    })
-    .select("id")
-    .single();
-
-  if (sessionError || !session) {
-    return { error: "Session konnte nicht erstellt werden" };
+  if (completionError) {
+    return { error: completionError.message };
   }
 
-  // Add all players as participants
-  const allUserIds = [user.id, ...confirmedMatches.map((m: any) => m.post_user_id)];
-  await supabase.from("session_participants").insert(
-    allUserIds.map((uid: string) => ({
-      session_id: session.id,
-      user_id: uid,
-      status: "joined",
-    }))
-  );
+  const completion = (completionRows as CompleteLfgMatchResult[] | null)?.[0];
 
-  // Mark all LFG posts as matched
-  const allPostIds = [post.id, ...confirmedMatches.map((m: any) => m.post_id)];
-  await supabase
-    .from("lfg_posts")
-    .update({ status: "matched", matched_session_id: session.id })
-    .in("id", allPostIds);
+  if (!completion?.success) {
+    return { error: completion?.message ?? "LFG-Matching fehlgeschlagen" };
+  }
 
-  // Notify all matched players
-  await supabase.from("notifications").insert(
-    allUserIds.map((uid: string) => ({
-      user_id: uid,
-      type: "lfg_match",
-      title: "Match gefunden!",
-      body: `${allUserIds.length} Spieler für ${tcgConfig?.shortName ?? post.tcg}${shop ? " bei " + shop.shop_name : ""}`,
-      data: { session_id: session.id },
-    }))
-  );
+  if (completion.result_status !== "matched" || !completion.session_id) {
+    revalidatePath("/dashboard");
+    return { success: true, status: "waiting" as const, postId: post.id };
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/sessions");
-  return { success: true, status: "matched" as const, sessionId: session.id };
+  return { success: true, status: "matched" as const, sessionId: completion.session_id };
 }
 
 function findNextMatchingDay(daysOfWeek: number[], from: Date): Date {
-  const currentDay = from.getDay(); // 0=Sun
+  const currentDay = from.getDay();
   for (let offset = 0; offset < 7; offset++) {
     const candidateJsDay = (currentDay + offset) % 7;
-    // Convert JS day (0=Sun) to our format (0=Mo, 6=So)
     const ourDay = candidateJsDay === 0 ? 6 : candidateJsDay - 1;
     if (daysOfWeek.includes(ourDay)) {
       const result = new Date(from);
@@ -203,7 +114,7 @@ function findNextMatchingDay(daysOfWeek: number[], from: Date): Date {
       return result;
     }
   }
-  return from; // fallback
+  return from;
 }
 
 export async function cancelLfgPost(postId: string) {

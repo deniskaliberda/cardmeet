@@ -3,6 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
+type SupabaseMutationError = {
+  code?: string;
+  message: string;
+};
+
+type WaitlistMutationResult = PromiseLike<{ error: SupabaseMutationError | null }>;
+
+type WaitlistDeleteBuilder = {
+  eq(column: "session_id" | "user_id", value: string): WaitlistDeleteBuilder & WaitlistMutationResult;
+};
+
+type WaitlistClient = {
+  from(table: "session_waitlist"): {
+    insert(row: { session_id: string; user_id: string }): WaitlistMutationResult;
+    delete(): WaitlistDeleteBuilder;
+  };
+};
+
 export async function joinSession(sessionId: string) {
   const supabase = await createClient();
   const {
@@ -11,18 +29,16 @@ export async function joinSession(sessionId: string) {
 
   if (!user) return { error: "Nicht angemeldet" };
 
-  // Use upsert so a user who previously left can rejoin
-  const { error } = await supabase.from("session_participants").upsert(
-    { session_id: sessionId, user_id: user.id, status: "joined" },
-    { onConflict: "session_id,user_id" }
-  );
+  const { data, error } = await supabase.rpc("join_session", {
+    p_session_id: sessionId,
+  });
 
   if (error) return { error: error.message };
 
-  // Notification is created by the participant_joined DB trigger
-  // (migration 00031). Server-side insert was using `session_join` which
-  // does not exist in the notifications type CHECK and notifications has
-  // no INSERT policy anyway — the row was silently dropped.
+  const result = data?.[0];
+  if (result && !result.success) {
+    return { error: result.message ?? "Beitreten fehlgeschlagen" };
+  }
 
   revalidatePath(`/sessions/${sessionId}`);
   revalidatePath("/sessions");
@@ -37,17 +53,16 @@ export async function leaveSession(sessionId: string) {
 
   if (!user) return { error: "Nicht angemeldet" };
 
-  const { error } = await supabase
-    .from("session_participants")
-    .update({ status: "left" })
-    .eq("session_id", sessionId)
-    .eq("user_id", user.id);
+  const { data, error } = await supabase.rpc("leave_session", {
+    p_session_id: sessionId,
+  });
 
   if (error) return { error: error.message };
 
-  // Waitlist notification (if anyone is waiting) is also handled by the
-  // participant_left trigger in migration 00031. Server insert with
-  // `session_join` type was silently dropped here too.
+  const result = data?.[0];
+  if (result && !result.success) {
+    return { error: result.message ?? "Verlassen fehlgeschlagen" };
+  }
 
   revalidatePath(`/sessions/${sessionId}`);
   revalidatePath("/sessions");
@@ -62,24 +77,16 @@ export async function removeParticipant(sessionId: string, userId: string) {
 
   if (!user) return { error: "Nicht angemeldet" };
 
-  const { error } = await supabase
-    .from("session_participants")
-    .update({ status: "removed" })
-    .eq("session_id", sessionId)
-    .eq("user_id", userId);
+  const { data, error } = await supabase.rpc("kick_session_participant", {
+    p_session_id: sessionId,
+    p_user_id: userId,
+  });
 
   if (error) return { error: error.message };
-
-  // Notify the removed participant
-  const { data: session } = await supabase
-    .from("sessions")
-    .select("title")
-    .eq("id", sessionId)
-    .single();
-
-  // Notification handled by participant_kicked branch of the trigger
-  // in migration 00031 (status update 'joined' -> 'kicked').
-  void session;
+  const result = data?.[0];
+  if (result && !result.success) {
+    return { error: result.message ?? "Entfernen fehlgeschlagen" };
+  }
 
   revalidatePath(`/sessions/${sessionId}`);
   return { success: true };
@@ -190,7 +197,8 @@ export async function joinWaitlist(sessionId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht angemeldet" };
 
-  const { error } = await (supabase as any).from("session_waitlist").insert({
+  const waitlist = supabase as unknown as WaitlistClient;
+  const { error } = await waitlist.from("session_waitlist").insert({
     session_id: sessionId,
     user_id: user.id,
   });
@@ -207,7 +215,8 @@ export async function leaveWaitlist(sessionId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Nicht angemeldet" };
 
-  const { error } = await (supabase as any)
+  const waitlist = supabase as unknown as WaitlistClient;
+  const { error } = await waitlist
     .from("session_waitlist")
     .delete()
     .eq("session_id", sessionId)
